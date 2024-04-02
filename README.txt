@@ -3,7 +3,6 @@
 Special syllabus Spring 2024
 Norwegian University of Life Sciences (NMBU)
 
-
 ---
 
 Relevant literature:
