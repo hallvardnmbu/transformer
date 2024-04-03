@@ -29,11 +29,11 @@ class Attention(torch.nn.Module):
         }
 
         # Input projection of `query`, `key`, `value` (therefore `3 * config.n_embd`).
-        self.c_attn = torch.nn.Linear(self.parameter["n_embd"], 3 * self.parameter["n_embd"], 
+        self.c_attn = torch.nn.Linear(self.parameter["n_embd"], 3 * self.parameter["n_embd"],
                                       bias=self.parameter["bias"])
 
         # Output projection.
-        self.c_proj = torch.nn.Linear(self.parameter["n_embd"], self.parameter["n_embd"], 
+        self.c_proj = torch.nn.Linear(self.parameter["n_embd"], self.parameter["n_embd"],
                                       bias=self.parameter["bias"])
 
         # Regularization.
@@ -42,10 +42,8 @@ class Attention(torch.nn.Module):
 
         # Checking if Flash Attention is available.
         if not self.flash:
-            LOGGER.warning("""
-                           [Attention]: Flash Attention requires PyTorch >= 2.0. 
-                           Defaulting to slow attention.
-                           """)
+            LOGGER.warning("[Attention]: Flash Attention requires PyTorch >= 2.0. "
+                           "Defaulting to slow attention.")
 
             # Only apply attention to the left side of the sequence.
             self.register_buffer(

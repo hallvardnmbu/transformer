@@ -31,7 +31,7 @@ class AttentionConfig:
             n_positions: int = 1024,
             bias: bool = True,
             dropout: float = 0.1,
-            ):
+    ):
         """
         Initialize the Attention configuration.
 
