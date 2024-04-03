@@ -20,22 +20,27 @@ class Attention(torch.nn.Module):
 
         LOGGER.info("[Attention]: Initializing with config: %s", config.__dict__)
 
-        self.n_head = config.n_head
-        self.n_embd = config.n_embd
-        self.dropout = config.dropout
+        self.parameter = {
+            "n_head": config.n_head,
+            "n_embd": config.n_embd,
+            "dropout": config.dropout,
+            "bias": config.bias,
+            "flash": hasattr(torch.nn.functional, 'scaled_dot_product_attention')
+        }
 
         # Input projection of `query`, `key`, `value` (therefore `3 * config.n_embd`).
-        self.c_attn = torch.nn.Linear(self.n_embd, 3 * self.n_embd, bias=config.bias)
+        self.c_attn = torch.nn.Linear(self.parameter["n_embd"], 3 * self.parameter["n_embd"], 
+                                      bias=self.parameter["bias"])
 
         # Output projection.
-        self.c_proj = torch.nn.Linear(self.n_embd, self.n_embd, bias=config.bias)
+        self.c_proj = torch.nn.Linear(self.parameter["n_embd"], self.parameter["n_embd"], 
+                                      bias=self.parameter["bias"])
 
         # Regularization.
-        self.attn_dropout = torch.nn.Dropout(self.dropout)
-        self.resid_dropout = torch.nn.Dropout(self.dropout)
+        self.attn_dropout = torch.nn.Dropout(self.parameter["dropout"])
+        self.resid_dropout = torch.nn.Dropout(self.parameter["dropout"])
 
-        # Checking if Flash Attention if available.
-        self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
+        # Checking if Flash Attention is available.
         if not self.flash:
             LOGGER.warning("""
                            [Attention]: Flash Attention requires PyTorch >= 2.0. 
@@ -45,8 +50,8 @@ class Attention(torch.nn.Module):
             # Only apply attention to the left side of the sequence.
             self.register_buffer(
                 "bias",
-                torch.tril(torch.ones(config.n_positions, config.n_positions))\
-                    .view(1, 1, config.n_positions, config.n_positions)
+                torch.tril(torch.ones(config.n_positions, config.n_positions))
+                .view(1, 1, config.n_positions, config.n_positions)
             )
 
         LOGGER.debug("[Attention]: Initialized. in: %s -> out: %s", self.c_attn, self.c_attn)
@@ -65,10 +70,11 @@ class Attention(torch.nn.Module):
         LOGGER.debug("[Attention]: Forward pass. B=%s, T=%s, C=%s", B, T, C)
 
         # query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k, v  = self.c_attn(inputs).split(self.n_embd, dim=2)
-        k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
-        q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
-        v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
+        # (B, nh, T, hs)
+        q, k, v = self.c_attn(inputs).split(self.parameter["n_embd"], dim=2)
+        k = k.view(B, T, self.parameter["n_head"], C // self.parameter["n_head"]).transpose(1, 2)
+        q = q.view(B, T, self.parameter["n_head"], C // self.parameter["n_head"]).transpose(1, 2)
+        v = v.view(B, T, self.parameter["n_head"], C // self.parameter["n_head"]).transpose(1, 2)
 
         # Causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         if self.flash:
@@ -76,14 +82,14 @@ class Attention(torch.nn.Module):
             y = torch.nn.functional.scaled_dot_product_attention(
                 q, k, v,
                 attn_mask=None,
-                dropout_p=self.dropout if self.training else 0,
+                dropout_p=self.parameter["dropout"] if self.training else 0,
                 is_causal=True,
                 scale=None
-                )
+            )
         else:
             # Manual implementation of attention.
             att = (q @ k.transpose(-2, -1)) * (1.0 / torch.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+            att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))
             att = torch.nn.functional.softmax(att, dim=-1)
             att = self.attn_dropout(att)
 
