@@ -86,7 +86,7 @@ class Attention(torch.nn.Module):
             )
         else:
             # Manual implementation of attention.
-            att = (q @ k.transpose(-2, -1)) * (1.0 / torch.sqrt(k.size(-1)))
+            att = (q @ k.transpose(-2, -1)) * (1.0 / torch.tensor(torch.sqrt(k.size(-1))))
             att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))
             att = torch.nn.functional.softmax(att, dim=-1)
             att = self.attn_dropout(att)
