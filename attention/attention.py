@@ -41,7 +41,7 @@ class Attention(torch.nn.Module):
         self.resid_dropout = torch.nn.Dropout(self.parameter["dropout"])
 
         # Checking if Flash Attention is available.
-        if not self.flash:
+        if not self.parameter["flash"]:
             LOGGER.warning("[Attention]: Flash Attention requires PyTorch >= 2.0. "
                            "Defaulting to slow attention.")
 
@@ -75,7 +75,7 @@ class Attention(torch.nn.Module):
         v = v.view(B, T, self.parameter["n_head"], C // self.parameter["n_head"]).transpose(1, 2)
 
         # Causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
-        if self.flash:
+        if self.parameter["flash"]:
             # Efficient attention using Flash Attention CUDA kernels.
             y = torch.nn.functional.scaled_dot_product_attention(
                 q, k, v,
