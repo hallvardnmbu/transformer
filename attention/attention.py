@@ -1,7 +1,7 @@
 """
 Attention mechanism for the Transformer model.
 
-Based on the implementations from Hugging Face and Andrej Karpathy:
+Based on the (GPT-2) implementations from Hugging Face and Andrej Karpathy:
 
 https://github.com/huggingface/transformers/
 https://github.com/karpathy/nanoGPT/
@@ -65,7 +65,11 @@ class Attention(torch.nn.Module):
         """
         B, T, C = inputs.size()
 
-        LOGGER.debug("[Attention]: Forward pass. B=%s, T=%s, C=%s", B, T, C)
+        LOGGER.debug("[Attention]: Forward pass. \n"
+                     "\tbatch size: %s \n"
+                     "\tsequence length: %s \n"
+                     "\tembedding dimensionality: %s",
+                     B, T, C)
 
         # query, key, values for all heads in batch and move head forward to be the batch dim
         # (B, nh, T, hs)
