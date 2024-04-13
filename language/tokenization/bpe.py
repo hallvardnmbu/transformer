@@ -14,7 +14,8 @@ https://github.com/openai/tiktoken/blob/main/tiktoken_ext/openai_public.py
 import re
 import unicodedata
 
-PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""  # noqa: E501
+
+PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""  # pylint: disable=C0301
 
 
 # --------------------------------------------------------------------------------------------------
@@ -98,6 +99,7 @@ def render_token(t: bytes) -> str:
 # Tokenizers
 
 class RegexTokenizer:
+    """Regular expression-based tokenizer."""
     def __init__(self, pattern=None):
         """
         Default: vocab size of 256 (all bytes), no merges, no patterns.
@@ -197,6 +199,16 @@ class RegexTokenizer:
         return vocab
 
     def train(self, text, vocab_size, verbose=False):
+        """
+        Train the tokenizer on a given text.
+
+        Parameters
+        ----------
+        text : str
+            Text to train on.
+        vocab_size : int
+        verbose : bool, optional
+        """
         assert vocab_size >= 256
         num_merges = vocab_size - 256
 

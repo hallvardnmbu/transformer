@@ -10,6 +10,7 @@ https://github.com/karpathy/nanoGPT/
 import logging
 import torch
 
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -104,13 +105,3 @@ class Attention(torch.nn.Module):
         # Output projection.
         y = self.resid_dropout(self.c_proj(y))
         return y
-
-
-if __name__ == "__main__":
-    import os
-    import sys
-
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from config.attention import AttentionConfig
-
-    attention = Attention(AttentionConfig)

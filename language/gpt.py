@@ -1,18 +1,27 @@
 """The GPT Language Model. From https://github.com/karpathy/nanoGPT/blob/master/model.py"""
 
-from block import Block, LayerNorm
-from config.gpt import GPTConfig
-
 import logging
 import inspect
 import torch
+
+from block import Block, LayerNorm
+from config.gpt import GPTConfig
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class GPT(torch.nn.Module):
+    """The GPT Language Model."""
     def __init__(self, config):
+        """
+        Initialize the GPT model.
+
+        Parameters
+        ----------
+        config : dataclasses.dataclass
+            Configuration object (hyperparameters) for the model.
+        """
         super().__init__()
 
         assert config.vocab_size is not None
@@ -38,7 +47,7 @@ class GPT(torch.nn.Module):
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02 / torch.sqrt(2 * config.n_layer))
 
-        LOGGER.info("Number of parameters: %.2fM" % (self.get_num_params() / 1e6,))
+        LOGGER.info("Number of parameters: %s", self.get_num_params() / 1e6)
 
     def get_num_params(self, non_embedding=True):
         """
@@ -48,13 +57,26 @@ class GPT(torch.nn.Module):
         ----------
         non_embedding: bool, optional
             If True, subtract the number of parameters in the position embeddings.
+
+        Returns
+        -------
+        n_params : int
+            The number of parameters in the model.
         """
         n_params = sum(p.numel() for p in self.parameters())
         if non_embedding:
             n_params -= self.transformer.wpe.weight.numel()
         return n_params
 
-    def _init_weights(self, module):
+    @staticmethod
+    def _init_weights(module):
+        """
+        Initialize the weights of a predefined model.
+
+        Parameters
+        ----------
+        module : torch.nn.Module
+        """
         if isinstance(module, torch.nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
@@ -63,8 +85,25 @@ class GPT(torch.nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx, targets=None):
+        """
+        Forward pass of the GPT model.
+
+        Parameters
+        ----------
+        idx : torch.Tensor
+            Input tensor of shape `(batch_size, sequence_length)`.
+        targets : torch.Tensor, optional
+            Target tensor of shape `(batch_size, sequence_length)`.
+
+        Returns
+        -------
+        logits : torch.Tensor
+            The output logits of the model.
+        loss : torch.Tensor, optional
+            The loss of the model, if targets are provided.
+        """
         device = idx.device
-        b, t = idx.size()
+        _, t = idx.size()
 
         assert t <= self.config.block_size, (f"Cannot forward sequence of length {t}, "
                                              f"block size is only {self.config.block_size}")
@@ -117,21 +156,36 @@ class GPT(torch.nn.Module):
 
     @classmethod
     def from_pretrained(cls, model_type, override_args=None):
+        """
+        Load a pretrained GPT model from the Huggingface Transformers library.
+
+        Parameters
+        ----------
+        model_type : str
+            The model type to load. One of 'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'.
+        override_args : dict, optional
+            Override arguments for the model.
+
+        Returns
+        -------
+        model : GPT
+            The pretrained GPT model.
+        """
         assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
         override_args = override_args or {}
 
         # Only dropout can be overridden see more notes below
         assert all(k == 'dropout' for k in override_args)
 
-        from transformers import GPT2LMHeadModel
-        LOGGER.info("Loading weights from pretrained GPT: %s" % model_type)
+        from transformers import GPT2LMHeadModel  # pylint: disable=import-outside-toplevel
+        LOGGER.info("Loading weights from pretrained GPT: %s", model_type)
 
         # n_layer, n_head and n_embd are determined from model_type
         config_args = {
-            'gpt2':         dict(n_layer=12, n_head=12, n_embd=768),   # 124M params
-            'gpt2-medium':  dict(n_layer=24, n_head=16, n_embd=1024),  # 350M params
-            'gpt2-large':   dict(n_layer=36, n_head=20, n_embd=1280),  # 774M params
-            'gpt2-xl':      dict(n_layer=48, n_head=25, n_embd=1600),  # 1558M params
+            'gpt2': {"n_layer": 12, "n_head": 12, "n_embd": 768},   # 124M params
+            'gpt2-medium': {"n_layer": 24, "n_head": 16, "n_embd": 1024},  # 350M params
+            'gpt2-large': {"n_layer": 36, "n_head": 20, "n_embd": 1280},  # 774M params
+            'gpt2-xl': {"n_layer": 48, "n_head": 25, "n_embd": 1600},  # 1558M params
         }[model_type]
 
         LOGGER.info("Forcing vocab_size=50257, block_size=1024, bias=True")
@@ -182,6 +236,21 @@ class GPT(torch.nn.Module):
         return model
 
     def configure_optimizers(self, weight_decay, learning_rate, betas, device_type):
+        """
+        Configure the optimizer for the model.
+
+        Parameters
+        ----------
+        weight_decay : float
+        learning_rate : float
+        betas : tuple[float, float]
+        device_type : str
+
+        Returns
+        -------
+        optimizer : torch.optim.AdamW
+            The AdamW optimizer.
+        """
         param_dict = {pn: p for pn, p in self.named_parameters() if p.requires_grad}
 
         # Create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
@@ -196,32 +265,44 @@ class GPT(torch.nn.Module):
         num_decay_params = sum(p.numel() for p in decay_params)
         num_nodecay_params = sum(p.numel() for p in nodecay_params)
 
-        LOGGER.info(f"Num decayed parameter tensors: {len(decay_params)}, "
-                    f"with {num_decay_params:,} parameters")
-        LOGGER.info(f"Num non-decayed parameter tensors: {len(nodecay_params)}, "
-                    f"with {num_nodecay_params:,} parameters")
+        LOGGER.info("Num decayed parameter tensors: %s, with %s parameters",
+                    len(decay_params), num_decay_params)
+        LOGGER.info("Num non-decayed parameter tensors: %s, with %s parameters",
+                    len(nodecay_params), num_nodecay_params)
 
         # Create AdamW optimizer and use the fused version if it is available.
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and device_type == 'cuda'
-        extra_args = dict(fused=True) if use_fused else dict()
+        extra_args = {"fused": True} if use_fused else {}
         optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args)
 
-        LOGGER.info(f"Using fused AdamW: {use_fused}")
+        LOGGER.info("Using fused AdamW: %s", use_fused)
 
         return optimizer
 
     def estimate_mfu(self, fwdbwd_per_iter, dt):
-        """ estimate model flops utilization (MFU) in units of A100 bfloat16 peak FLOPS """
-        # first estimate the number of flops we do per iteration.
-        # see PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
+        """
+        Estimate model flops utilization (MFU) in units of A100 bfloat16 peak FLOPS.
+
+        Parameters
+        ----------
+        fwdbwd_per_iter : int
+            Number of forward-backward passes per iteration.
+        dt : float
+            Time in seconds for one forward-backward pass.
+
+        Notes
+        -----
+        First estimate the number of flops we do per iteration.
+        - See PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
+        Express our flops throughput as ratio of A100 bfloat16 peak flops.
+        """
         N = self.get_num_params()
         cfg = self.config
         L, H, Q, T = cfg.n_layer, cfg.n_head, cfg.n_embd // cfg.n_head, cfg.block_size
         flops_per_token = 6 * N + 12 * L * H * Q * T
         flops_per_fwdbwd = flops_per_token * T
         flops_per_iter = flops_per_fwdbwd * fwdbwd_per_iter
-        # express our flops throughput as ratio of A100 bfloat16 peak flops
         flops_achieved = flops_per_iter * (1.0 / dt)  # per second
         flops_promised = 312e12  # A100 GPU bfloat16 peak flops is 312 TFLOPS
         mfu = flops_achieved / flops_promised
@@ -233,11 +314,32 @@ class GPT(torch.nn.Module):
         Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
         the sequence max_new_tokens times, feeding the predictions back into the model each time.
         Most likely you'll want to make sure to be in model.eval() mode of operation for this.
+
+        Parameters
+        ----------
+        idx : torch.Tensor
+            Input tensor of shape `(batch_size, sequence_length)`.
+        max_new_tokens : int
+            The number of tokens to generate.
+        temperature : float, optional
+            The temperature for sampling.
+        top_k : int, optional
+            The top-k value for sampling.
+
+        Returns
+        -------
+        idx : torch.Tensor
+            The generated indices.
+
+        Notes
+        -----
+        The temperature is a hyperparameter that controls the randomness of the sampling.
         """
         for _ in range(max_new_tokens):
             # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:,
-                                                                         -self.config.block_size:]
+            idx_cond = idx \
+                if idx.size(1) <= self.config.block_size \
+                else idx[:, -self.config.block_size:]
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(idx_cond)
             # pluck the logits at the final step and scale by desired temperature
@@ -247,7 +349,7 @@ class GPT(torch.nn.Module):
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             # apply softmax to convert logits to (normalized) probabilities
-            probs = F.softmax(logits, dim=-1)
+            probs = torch.nn.functional.softmax(logits, dim=-1)
             # sample from the distribution
             idx_next = torch.multinomial(probs, num_samples=1)
             # append sampled index to the running sequence and continue
