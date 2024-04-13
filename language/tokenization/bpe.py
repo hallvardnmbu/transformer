@@ -11,11 +11,11 @@ Using the regex pattern of GPT-4:
 https://github.com/openai/tiktoken/blob/main/tiktoken_ext/openai_public.py
 """
 
-import re
+import regex as re
 import unicodedata
 
 
-PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""  # pylint: disable=C0301
+PATTERN = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"  # pylint: disable=C0301 # noqa: E501
 
 
 # --------------------------------------------------------------------------------------------------
@@ -204,13 +204,16 @@ class RegexTokenizer:
 
         Parameters
         ----------
-        text : str
+        text : str or list[str]
             Text to train on.
         vocab_size : int
         verbose : bool, optional
         """
         assert vocab_size >= 256
         num_merges = vocab_size - 256
+
+        if isinstance(text, list):
+            text = " ".join(text)
 
         ids = [list(chunk.encode("utf-8")) for chunk in re.findall(self._pattern, text)]
 
