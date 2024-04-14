@@ -4,8 +4,8 @@ import logging
 import inspect
 import torch
 
-from block import Block, LayerNorm
-from config.gpt import GPTConfig
+from .block import Block, LayerNorm
+from .config import Hyperparameters
 
 
 LOGGER = logging.getLogger(__name__)
@@ -198,7 +198,7 @@ class GPT(torch.nn.Module):
             config_args['dropout'] = override_args['dropout']
 
         # Create a from-scratch initialized karpathy/nanoGPT model.
-        config = GPTConfig(**config_args)
+        config = Hyperparameters(**config_args)
         model = GPT(config)
         sd = model.state_dict()
         sd_keys = sd.keys()

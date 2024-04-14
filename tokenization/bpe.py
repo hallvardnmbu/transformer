@@ -11,8 +11,8 @@ Using the regex pattern of GPT-4:
 https://github.com/openai/tiktoken/blob/main/tiktoken_ext/openai_public.py
 """
 
-import regex as re
 import unicodedata
+import regex
 
 
 PATTERN = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"  # pylint: disable=C0301 # noqa: E501
@@ -50,7 +50,7 @@ def merge(ids, pair, idx):
 
     Example
     -------
-        ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -> [4, 3, 4]
+    ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -> [4, 3, 4]
     """
     newids = []
     i = 0
@@ -116,7 +116,7 @@ class RegexTokenizer:
         The vocab is a dictionary of integers to bytes, e.g. {0: b'\x00', 1: b'\x01', ...}.
         """
         self.pattern = PATTERN if pattern is None else pattern
-        self._pattern = re.compile(self.pattern)
+        self._pattern = regex.compile(self.pattern)
 
         self.merges = {}
 
@@ -215,7 +215,7 @@ class RegexTokenizer:
         if isinstance(text, list):
             text = " ".join(text)
 
-        ids = [list(chunk.encode("utf-8")) for chunk in re.findall(self._pattern, text)]
+        ids = [list(chunk.encode("utf-8")) for chunk in regex.findall(self._pattern, text)]
 
         # Iteratively merge the most common pairs to create new tokens
         merges = {}
@@ -288,7 +288,7 @@ class RegexTokenizer:
     def encode_ordinary(self, text):
         """Encoding that ignores any special tokens."""
         ids = []
-        for chunk in re.findall(self._pattern, text):
+        for chunk in regex.findall(self._pattern, text):
             chunk_bytes = chunk.encode("utf-8")
             chunk_ids = self._encode_chunk(chunk_bytes)
             ids.extend(chunk_ids)
@@ -330,8 +330,8 @@ class RegexTokenizer:
         # We have to be careful with potential special tokens in the text, which is done by
         # splitting the text based on the occurrence of any exact match with any of the special
         # tokens by using regex.
-        special_pattern = "(" + "|".join(re.escape(k) for k in special) + ")"
-        special_chunks = re.split(special_pattern, text)
+        special_pattern = "(" + "|".join(regex.escape(k) for k in special) + ")"
+        special_chunks = regex.split(special_pattern, text)
 
         ids = []
         for part in special_chunks:

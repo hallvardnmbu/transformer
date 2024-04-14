@@ -3,7 +3,7 @@
 import logging
 import torch
 
-from attention.attention import Attention
+from .attention import Attention
 
 
 LOGGER = logging.getLogger(__name__)

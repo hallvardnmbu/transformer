@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class GPTConfig:
+class Hyperparameters:
     """
     Configuration for the GPT.
 
