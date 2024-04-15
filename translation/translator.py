@@ -5,6 +5,7 @@ import time
 import random
 import logging
 import torch
+import datasets
 
 from transformers import AutoTokenizer
 from tokenization.bpe import RegexTokenizer
@@ -12,10 +13,11 @@ from tokenization.bpe import RegexTokenizer
 from config import Hyperparameters
 from seq2seq import Transformer
 
+
 os.makedirs("./output", exist_ok=True)
 handler = logging.FileHandler('./output/info.txt')
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
 
 
@@ -39,6 +41,7 @@ class Translator(torch.nn.Module):
 
         self.loss_fn = config.loss_fn
         self.transformer = Transformer(config)
+        self.transformer.to(config.device)
         self.optimizer = torch.optim.Adam(self.transformer.parameters(), **config.optimizer)
 
     def _setup_metrics(self):
@@ -49,7 +52,7 @@ class Translator(torch.nn.Module):
             loss.write("epoch,train_loss,val_loss\n")
         if LOGGER.isEnabledFor(logging.DEBUG):
             with open(os.path.join(self.config.output_path, "debug.csv"), "w") as debug:
-                debug.write("iteration,train_loss_batch\n")
+                debug.write("epoch,iteration,train_loss_batch\n")
 
     def _tokenizer(self, path="ltg/norbert3-large", vocab_size=None, k=None, **other):
         """
@@ -71,9 +74,7 @@ class Translator(torch.nn.Module):
         tokenization.bpe.RegexTokenizer or transformers.AutoTokenizer
         """
         if not path:
-            LOGGER.debug("Training a custom tokenizer.")
-            source, target = self._data(self.config.data_path,
-                                        self.config.from_lang, self.config.to_lang)
+            source, target = self._data(self.config.from_lang, self.config.to_lang)
             k = min(len(source), len(target), k)
             LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
 
@@ -83,18 +84,16 @@ class Translator(torch.nn.Module):
                 text=random.sample(source, k=k) + random.sample(target, k=k),
                 vocab_size=vocab_size
             )
-            LOGGER.info(" Success.")
+            LOGGER.info("> Success.\n")
             return tokenizer
         return AutoTokenizer.from_pretrained(path)
 
-    def _data(self, path="./dataset/MultiParaCrawl", from_lang="nb", to_lang="nn"):
+    def _data(self, from_lang="nb", to_lang="nn"):
         """
-        Load the data for the model.
+        Load the data from huggingface for the model.
 
         Parameters
         ----------
-        path : str
-            Path to the dataset files, omitting the suffix (i.e. language abbreviation).
         from_lang : str, optional
             The source language.
         to_lang : str, optional
@@ -102,21 +101,25 @@ class Translator(torch.nn.Module):
 
         Returns
         -------
-        list, list
-            The data for the two languages. I.e., lists of tokens.
+        datasets.dataset_dict.DatasetDict, datasets.dataset_dict.DatasetDict
+            The data for the two languages.
 
         Note
         ----
         The suffixes are defined in the `Hyperparameters` class, as `from_lang` and `to_lang`.
         """
-        LOGGER.info("Loading data from %s for %s -> %s.", path, from_lang, to_lang)
+        LOGGER.info("Loading data from %s and %s for %s -> %s.",
+                    self.config.from_path, self.config.to_path, from_lang, to_lang)
 
-        source = [self.tokenize_and_pad(_l1.strip())
-                  for _l1 in open(path + "." + from_lang, "r").readlines()]
-        target = [self.tokenize_and_pad(_l2.strip())
-                  for _l2 in open(path + "." + to_lang, "r").readlines()]
+        _source = datasets.load_dataset(self.config.from_path, from_lang)
+        source = _source.map(lambda x: {'tokenized': self.tokenize_and_pad(x['sentence1'])})
+        source = source.remove_columns(["id", "label", "sentence2"])
 
-        LOGGER.info(" Success.")
+        _target = datasets.load_dataset(self.config.to_path, to_lang)
+        target = _target.map(lambda x: {'tokenized': self.tokenize_and_pad(x['sentence1'])})
+        target = target.remove_columns(["id", "label", "sentence2"])
+
+        LOGGER.info("> Success.\n")
 
         return source, target
 
@@ -166,7 +169,7 @@ class Translator(torch.nn.Module):
             if next_word == self.config.tokenizer["special_symbols"]["[EOS]"]:
                 break
 
-        return self.tokenizer.decode(out.flatten()).replace("[BOS]", "").replace("[EOS]", "")
+        return self.tokenizer.decode(out.flatten(), skip_special_tokens=True)
 
     def tokenize_and_pad(self, text):
         """
@@ -183,7 +186,7 @@ class Translator(torch.nn.Module):
             The tokenized and padded text.
         """
         return torch.cat((torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]]),
-                          torch.tensor(self.tokenizer.encode(text)),
+                          torch.tensor(self.tokenizer.encode(text, add_special_tokens=False)),
                           torch.tensor([self.config.tokenizer["special_symbols"]["[EOS]"]])))
 
     @staticmethod
@@ -195,9 +198,9 @@ class Translator(torch.nn.Module):
         ----------
         batch : int
             The batch size.
-        source : list[list[int]]
+        source : list[list[int]] or any
             The source data.
-        target : list[list[int]]
+        target : list[list[int]] or any
             The target data.
 
         Returns
@@ -209,15 +212,15 @@ class Translator(torch.nn.Module):
         tgt = [random.sample(target, k=batch) for _ in range(len(target) // batch)]
         return src, tgt
 
-    def train_epoch(self, source=None, target=None):
+    def train_epoch(self, source, target):
         """
         Train the model for one epoch.
 
         Parameters
         ----------
-        source : list, optional
+        source : datasets.arrow_dataset.Dataset
             The source data.
-        target : list, optional
+        target : datasets.arrow_dataset.Dataset
             The target data.
 
         Returns
@@ -225,22 +228,18 @@ class Translator(torch.nn.Module):
         float
             The loss for the epoch.
         """
-        LOGGER.debug("Training the model one epoch.")
-
-        if not source or not target:
-            raise ValueError("No data loaded for the model.")
-
         self.transformer.train()
         losses = 0
 
-        batchwise = self._split_epoch(batch=self.config.batch_size, source=source, target=target)
-
-        for i, (src, tgt) in enumerate(zip(*batchwise)):
+        for i, (src, tgt) in enumerate(zip(source.iter(self.config.batch_size),
+                                           target.iter(self.config.batch_size))):
             src = torch.nn.utils.rnn.pad_sequence(
-                src, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+                [torch.tensor(x) for x in src["tokenized"]],
+                padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
             tgt = torch.nn.utils.rnn.pad_sequence(
-                tgt, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+                [torch.tensor(x) for x in tgt["tokenized"]],
+                padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
 
             src = src.to(self.config.device)
@@ -267,15 +266,15 @@ class Translator(torch.nn.Module):
 
         return losses
 
-    def evaluate(self, source=None, target=None):
+    def evaluate(self, source, target):
         """
         Evaluate the model.
 
         Parameters
         ----------
-        source : list, optional
+        source : datasets.arrow_dataset.Dataset
             The source data.
-        target : list, optional
+        target : datasets.arrow_dataset.Dataset
             The target data.
 
         Returns
@@ -283,23 +282,23 @@ class Translator(torch.nn.Module):
         float
             The loss for the evaluation.
         """
-        LOGGER.debug("Evaluating the model.")
-
-        if not source or not target:
-            raise ValueError("No data loaded for the model.")
+        LOGGER.debug("> Evaluating the model.")
 
         self.transformer.eval()
         losses = 0
 
-        batchwise = self._split_epoch(batch=self.config.batch_size, source=source, target=target)
-
-        for src, tgt in zip(*batchwise):
+        for src, tgt in zip(source.to_iterable_dataset(), target.to_iterable_dataset()):
             src = torch.nn.utils.rnn.pad_sequence(
-                src, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+                [torch.tensor(x) for x in src["tokenized"]],
+                padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
             tgt = torch.nn.utils.rnn.pad_sequence(
-                tgt, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+                [torch.tensor(x) for x in tgt["tokenized"]],
+                padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
+
+            src = src.to(self.config.device)
+            tgt = tgt.to(self.config.device)
 
             tgt_input = tgt[:-1, :]
 
@@ -324,18 +323,17 @@ class Translator(torch.nn.Module):
         sentence : str, optional
             A sentence to translate during training to visualise progress.
         """
-        LOGGER.info("Training the model for %s epochs.", self.config.epochs)
+        LOGGER.info("\nTraining the model for %s epochs.\n", self.config.epochs)
 
-        source, target = self._data(self.config.data_path,
-                                    self.config.from_lang, self.config.to_lang)
+        source, target = self._data(self.config.from_lang, self.config.to_lang)
 
         for epoch in range(1, self.config.epochs + 1):
             start_time = time.time()
-            train_loss = self.train_epoch(source, target)
+            train_loss = self.train_epoch(source["train"], target["train"])
             end_time = time.time()
-            val_loss = self.evaluate(source, target)
+            val_loss = self.evaluate(source["validation"], target["validation"])
 
-            LOGGER.info("Epoch: %s, Train loss: %s, Val loss: %s, Epoch time = %ss",
+            LOGGER.info("\nEpoch: %s, Train loss: %s, Val loss: %s, Epoch time = %ss",
                         epoch, train_loss, val_loss, round(end_time - start_time, 3))
 
             with open(os.path.join(self.config.output_path, "loss.csv"), "a") as loss:
@@ -345,12 +343,12 @@ class Translator(torch.nn.Module):
                     debug.writelines(f"{epoch},,\n")
 
             if checkpoints:
-                LOGGER.info("Saving the model as 'output/model-%s.pth'.", epoch)
+                LOGGER.info("> Saving checkpoint as 'output/model-%s.pth'.", epoch)
                 torch.save(self, f"output/model-{epoch}.pth")
 
             if sentence:
-                LOGGER.info("Translation of '%s' after training: %s",
-                            sentence, self(sentence))
+                LOGGER.info("> Translation of '%s' after epoch %s:\n  %s",
+                            sentence, epoch, self(sentence))
 
     def square_mask(self, dim):
         """
@@ -389,10 +387,10 @@ class Translator(torch.nn.Module):
         src_seq_len = src.shape[0]
         tgt_seq_len = tgt.shape[0]
 
-        tgt_m = self.square_mask(tgt_seq_len)
+        tgt_m = self.square_mask(tgt_seq_len).to(self.config.device)
         src_m = torch.zeros((src_seq_len, src_seq_len), device=self.config.device).type(torch.bool)
 
-        src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1)
-        tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1)
+        src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
+        tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
 
         return src_m, tgt_m, src_pad_m, tgt_pad_m

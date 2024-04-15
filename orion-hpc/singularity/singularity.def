@@ -2,7 +2,7 @@ Bootstrap: docker
 From: tensorflow/tensorflow:latest-gpu
 
 %help
-    Basic environment for running the gymnasium[atari] and pytorch libraries.
+    Basic environment for running transformers through the pytorch libraries.
 
 %labels
     AUTHOR_NAME Your Name Here
@@ -15,10 +15,9 @@ From: tensorflow/tensorflow:latest-gpu
 
     pip install --upgrade pip
 
-    pip install "gymnasium[atari]"
-    pip install "autorom[accept-rom-license]"
-
     pip install torch
+    pip install transformers
+    pip install regex
 
     pip install numpy
     pip install matplotlib

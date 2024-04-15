@@ -7,8 +7,8 @@ import torch
 @dataclass
 class Hyperparameters:
     vocab_size: int = 50000
-    n_encoder_layer: int = 3
-    n_decoder_layer: int = 3
+    n_encoder_layer: int = 8
+    n_decoder_layer: int = 12
     n_head: int = 8
     n_embd: int = 512
     dropout: float = 0.1
@@ -19,8 +19,9 @@ class Hyperparameters:
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     from_lang: str = "nb"
+    from_path: str = "NbAiLab/norwegian-paws-x"
     to_lang: str = "nn"
-    data_path: str = "./dataset/MultiParaCrawl"
+    to_path: str = "NbAiLab/norwegian-paws-x"
 
     tokenizer: dict[str, int or dict[str, int]] = field(
         default_factory=lambda: {

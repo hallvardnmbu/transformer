@@ -117,8 +117,6 @@ class Transformer(torch.nn.Module):
             if p.dim() > 1:
                 torch.nn.init.xavier_uniform_(p)
 
-        self.to(config.device)
-
     def forward(self,
                 src: torch.Tensor,
                 trg: torch.Tensor,

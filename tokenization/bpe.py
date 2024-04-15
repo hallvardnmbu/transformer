@@ -258,7 +258,7 @@ class RegexTokenizer:
         self.special_tokens = special_tokens
         self.inverse_special_tokens = {v: k for k, v in special_tokens.items()}
 
-    def decode(self, ids):
+    def decode(self, ids, skip_special_tokens=False):
         """Given a list of integers, return the corresponding string."""
         part_bytes = []
         for idx in ids:
@@ -270,6 +270,10 @@ class RegexTokenizer:
                 raise ValueError(f"invalid token id: {idx}")
         text_bytes = b"".join(part_bytes)
         text = text_bytes.decode("utf-8", errors="replace")
+
+        if skip_special_tokens:
+            text = "".join([c for c in text if c not in self.special_tokens])
+
         return text
 
     def _encode_chunk(self, text_bytes):
@@ -298,7 +302,7 @@ class RegexTokenizer:
             ids.extend(chunk_ids)
         return ids
 
-    def encode(self, text, allowed_special="none_raise"):
+    def encode(self, text, allowed_special="none_raise", **kwargs):
         """
         Unlike encode_ordinary, this function handles special tokens.
 
