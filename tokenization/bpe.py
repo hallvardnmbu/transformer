@@ -241,7 +241,11 @@ class RegexTokenizer:
         self.merges = merges  # used in encode()
         self.vocab = vocab    # used in decode()
 
-    def register_special_tokens(self, special_tokens):
+    @property
+    def vocab_size(self):
+        return len(self.vocab)
+
+    def add_special_tokens(self, special_tokens):
         """
         Register special tokens to be used in encode() and decode().
 

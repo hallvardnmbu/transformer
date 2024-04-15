@@ -22,7 +22,7 @@ class PositionalEncoding(torch.nn.Module):
         pos_embedding = pos_embedding.unsqueeze(-2)
 
         self.dropout = torch.nn.Dropout(dropout)
-        self.register_buffer('positional_embedding', pos_embedding)
+        self.register_buffer('pos_embedding', pos_embedding)
 
     def forward(self, token_embedding: torch.Tensor):
         return self.dropout(token_embedding + self.pos_embedding[:token_embedding.size(0), :])
