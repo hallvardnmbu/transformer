@@ -14,6 +14,7 @@ class Hyperparameters:
     dropout: float = 0.1
     bias: bool = False
 
+    epochs: int = 10
     batch_size: int = 128
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -42,6 +43,8 @@ class Hyperparameters:
             "lr": 0.0001, "betas": (0.9, 0.98), "eps": 1e-9
         }
     )
+
+    output_path: str = "./output/"
 
     def __post_init__(self):
         self.tokenizer["vocab_size"] = self.vocab_size

@@ -1,5 +1,6 @@
 """Translator model based on the Transformer architecture."""
 
+import os
 import time
 import random
 import logging
@@ -11,21 +12,44 @@ from tokenization.bpe import RegexTokenizer
 from config import Hyperparameters
 from seq2seq import Transformer
 
-
+os.makedirs("./output", exist_ok=True)
+handler = logging.FileHandler('./output/info.txt')
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
+LOGGER.addHandler(handler)
 
 
-class Translator:
+class Translator(torch.nn.Module):
     def __init__(self, config=Hyperparameters()):
+        """
+        Initialize the Translator class.
+
+        Parameters
+        ----------
+        config : Hyperparameters, optional
+            Configuration parameters for the Translator.
+        """
+        super().__init__()
+
         self.config = config
+        self._setup_metrics()
 
         self.tokenizer = self._tokenizer(**config.tokenizer)
         assert self.tokenizer.vocab_size == config.vocab_size
-        self.add_padding = self._padding()
 
         self.loss_fn = config.loss_fn
         self.transformer = Transformer(config)
         self.optimizer = torch.optim.Adam(self.transformer.parameters(), **config.optimizer)
+
+    def _setup_metrics(self):
+        """Create the metric file(s) for the model – to be filled during training."""
+        os.makedirs(os.path.dirname(self.config.output_path), exist_ok=True)
+
+        with open(os.path.join(self.config.output_path, "loss.csv"), "w") as loss:
+            loss.write("epoch,train_loss,val_loss\n")
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            with open(os.path.join(self.config.output_path, "debug.csv"), "w") as debug:
+                debug.write("iteration,train_loss_batch\n")
 
     def _tokenizer(self, path="ltg/norbert3-large", vocab_size=None, k=None, **other):
         """
@@ -47,16 +71,19 @@ class Translator:
         tokenization.bpe.RegexTokenizer or transformers.AutoTokenizer
         """
         if not path:
+            LOGGER.debug("Training a custom tokenizer.")
             source, target = self._data(self.config.data_path,
                                         self.config.from_lang, self.config.to_lang)
             k = min(len(source), len(target), k)
+            LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
 
             tokenizer = RegexTokenizer()
-            tokenizer.add_special_tokens({**other["special_symbols"]})
+            tokenizer.add_special_tokens({**other.get("special_symbols", {})})
             tokenizer.train(
                 text=random.sample(source, k=k) + random.sample(target, k=k),
                 vocab_size=vocab_size
             )
+            LOGGER.info(" Success.")
             return tokenizer
         return AutoTokenizer.from_pretrained(path)
 
@@ -84,20 +111,35 @@ class Translator:
         """
         LOGGER.info("Loading data from %s for %s -> %s.", path, from_lang, to_lang)
 
-        source = [self.add_padding(_l1.strip())
+        source = [self.tokenize_and_pad(_l1.strip())
                   for _l1 in open(path + "." + from_lang, "r").readlines()]
-        target = [self.add_padding(_l2.strip())
+        target = [self.tokenize_and_pad(_l2.strip())
                   for _l2 in open(path + "." + to_lang, "r").readlines()]
 
         LOGGER.info(" Success.")
 
         return source, target
 
-    def __call__(self, text, margin=5):
+    def __call__(self, text, margin=10):
+        """
+        Translate the input text.
+
+        Parameters
+        ----------
+        text : str
+            The text to be translated.
+        margin : int, optional
+            An added number of tokens that may be generated (length of the input text + `margin`).
+
+        Returns
+        -------
+        str
+            The translated text.
+        """
         self.transformer.eval()
         device = self.config.device
 
-        src = self.add_padding(text).view(-1, 1)
+        src = self.tokenize_and_pad(text).view(-1, 1)
         num_tokens = src.shape[0]
         src_mask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
 
@@ -126,40 +168,63 @@ class Translator:
 
         return self.tokenizer.decode(out.flatten()).replace("[BOS]", "").replace("[EOS]", "")
 
-    def _padding(self):
+    def tokenize_and_pad(self, text):
         """
-        Functionality for adding [BOS] and [EOS] (beginning & end of sentence) to an inputted text.
-        Note that any transforms may be added to the pipeline (in the dictionary below).
-        Also note that the (e.g.,) encoding can vary between the languages, if so, provide a mapping
-        from each language to the wanted encoder (and retrive this when calling `_transform`).
+        Add [BOS] and [EOS] (beginning & end of sentence) to an inputted text.
+
+        Parameters
+        ----------
+        text : str
+            The text to be tokenized and padded.
+
+        Returns
+        -------
+        torch.Tensor
+            The tokenized and padded text.
         """
-        def _transform(*transforms):
-            def func(text):
-                for transform in transforms:
-                    text = transform(text)
-                return text
-
-            return func
-
-        def _padding(tokens):
-            return torch.cat((torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]]),
-                              torch.tensor(tokens),
-                              torch.tensor([self.config.tokenizer["special_symbols"]["[EOS]"]])))
-
-        # For multi-tokenizer support:
-        # (Edit parts where `self.add_padding` is used to include the language mapping.)
-        # return {language: _transform(self.tokenizer.encode, _padding)
-        #         for language in [config.from_lang, config.to_lang]}
-
-        return _transform(self.tokenizer.encode, _padding)
+        return torch.cat((torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]]),
+                          torch.tensor(self.tokenizer.encode(text)),
+                          torch.tensor([self.config.tokenizer["special_symbols"]["[EOS]"]])))
 
     @staticmethod
     def _split_epoch(batch, source, target):
+        """
+        Split the epoch into batches.
+
+        Parameters
+        ----------
+        batch : int
+            The batch size.
+        source : list[list[int]]
+            The source data.
+        target : list[list[int]]
+            The target data.
+
+        Returns
+        -------
+        list, list
+            The batchwise split data for the two languages.
+        """
         src = [random.sample(source, k=batch) for _ in range(len(source) // batch)]
         tgt = [random.sample(target, k=batch) for _ in range(len(target) // batch)]
         return src, tgt
 
-    def train_epoch(self, batch_size=128, source=None, target=None):
+    def train_epoch(self, source=None, target=None):
+        """
+        Train the model for one epoch.
+
+        Parameters
+        ----------
+        source : list, optional
+            The source data.
+        target : list, optional
+            The target data.
+
+        Returns
+        -------
+        float
+            The loss for the epoch.
+        """
         LOGGER.debug("Training the model one epoch.")
 
         if not source or not target:
@@ -168,9 +233,9 @@ class Translator:
         self.transformer.train()
         losses = 0
 
-        batchwise = self._split_epoch(batch=batch_size, source=source, target=target)
+        batchwise = self._split_epoch(batch=self.config.batch_size, source=source, target=target)
 
-        for src, tgt in zip(*batchwise):
+        for i, (src, tgt) in enumerate(zip(*batchwise)):
             src = torch.nn.utils.rnn.pad_sequence(
                 src, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
@@ -196,12 +261,28 @@ class Translator:
             self.optimizer.step()
             losses += loss.item() / src.shape[0]
 
-            print(losses)
-            break
+            if LOGGER.isEnabledFor(logging.DEBUG):
+                with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
+                    debug.writelines(f",{i},{loss}\n")
 
         return losses
 
-    def evaluate(self, batch_size=128, source=None, target=None):
+    def evaluate(self, source=None, target=None):
+        """
+        Evaluate the model.
+
+        Parameters
+        ----------
+        source : list, optional
+            The source data.
+        target : list, optional
+            The target data.
+
+        Returns
+        -------
+        float
+            The loss for the evaluation.
+        """
         LOGGER.debug("Evaluating the model.")
 
         if not source or not target:
@@ -210,7 +291,7 @@ class Translator:
         self.transformer.eval()
         losses = 0
 
-        batchwise = self._split_epoch(batch=batch_size, source=source, target=target)
+        batchwise = self._split_epoch(batch=self.config.batch_size, source=source, target=target)
 
         for src, tgt in zip(*batchwise):
             src = torch.nn.utils.rnn.pad_sequence(
@@ -232,27 +313,79 @@ class Translator:
 
         return losses
 
-    def train(self, batch_size=128, epochs=5,
-              data_path="./dataset/MultiParaCrawl", from_lang="nb", to_lang="nn"):
-        LOGGER.info("Training the model for %s epochs.", epochs)
+    def learn(self, checkpoints=True, sentence=None):
+        """
+        Train the model for a specified number of epochs.
 
-        source, target = self._data(data_path, from_lang, to_lang)
+        Parameters
+        ----------
+        checkpoints : bool, optional
+            Whether to save the model after each epoch.
+        sentence : str, optional
+            A sentence to translate during training to visualise progress.
+        """
+        LOGGER.info("Training the model for %s epochs.", self.config.epochs)
 
-        for epoch in range(1, epochs + 1):
+        source, target = self._data(self.config.data_path,
+                                    self.config.from_lang, self.config.to_lang)
+
+        for epoch in range(1, self.config.epochs + 1):
             start_time = time.time()
-            train_loss = self.train_epoch(batch_size, source, target)
+            train_loss = self.train_epoch(source, target)
             end_time = time.time()
-            val_loss = self.evaluate(batch_size, source, target)
+            val_loss = self.evaluate(source, target)
 
             LOGGER.info("Epoch: %s, Train loss: %s, Val loss: %s, Epoch time = %ss",
                         epoch, train_loss, val_loss, round(end_time - start_time, 3))
 
+            with open(os.path.join(self.config.output_path, "loss.csv"), "a") as loss:
+                loss.writelines(f"{epoch},{train_loss},{val_loss}\n")
+            if LOGGER.isEnabledFor(logging.DEBUG):
+                with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
+                    debug.writelines(f"{epoch},,\n")
+
+            if checkpoints:
+                LOGGER.info("Saving the model as 'output/model-%s.pth'.", epoch)
+                torch.save(self, f"output/model-{epoch}.pth")
+
+            if sentence:
+                LOGGER.info("Translation of '%s' after training: %s",
+                            sentence, self(sentence))
+
     def square_mask(self, dim):
+        """
+        Create a square mask with the given dimension.
+
+        Parameters
+        ----------
+        dim : int
+            The dimension for the square mask.
+
+        Returns
+        -------
+        torch.Tensor
+            The square mask.
+        """
         mask = (torch.triu(torch.ones((dim, dim), device=self.config.device)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
     def masking(self, src, tgt):
+        """
+        Create masks for the source and target data.
+
+        Parameters
+        ----------
+        src : torch.Tensor
+            The source data.
+        tgt : torch.Tensor
+            The target data.
+
+        Returns
+        -------
+        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            The source mask, target mask, source padding mask, and target padding mask.
+        """
         src_seq_len = src.shape[0]
         tgt_seq_len = tgt.shape[0]
 
