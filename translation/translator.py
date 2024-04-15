@@ -19,9 +19,6 @@ class Translator:
     def __init__(self, config=Hyperparameters()):
         self.config = config
 
-        self.source, self.target = None, None
-        self._data(config.data_path, config.from_lang, config.to_lang)
-
         self.tokenizer = self._tokenizer(**config.tokenizer)
         assert self.tokenizer.vocab_size == config.vocab_size
         self.add_padding = self._padding()
@@ -50,12 +47,14 @@ class Translator:
         tokenization.bpe.RegexTokenizer or transformers.AutoTokenizer
         """
         if not path:
-            k = min(len(self.source), len(self.target), k)
+            source, target = self._data(self.config.data_path,
+                                        self.config.from_lang, self.config.to_lang)
+            k = min(len(source), len(target), k)
 
             tokenizer = RegexTokenizer()
             tokenizer.add_special_tokens({**other["special_symbols"]})
             tokenizer.train(
-                text=random.sample(self.source, k=k) + random.sample(self.target, k=k),
+                text=random.sample(source, k=k) + random.sample(target, k=k),
                 vocab_size=vocab_size
             )
             return tokenizer
@@ -77,7 +76,7 @@ class Translator:
         Returns
         -------
         list, list
-            The data for the two languages. E.g., lists of sentences.
+            The data for the two languages. I.e., lists of tokens.
 
         Note
         ----
@@ -85,10 +84,14 @@ class Translator:
         """
         LOGGER.info("Loading data from %s for %s -> %s.", path, from_lang, to_lang)
 
-        self.source = [_l1.strip() for _l1 in open(path + "." + from_lang, "r").readlines()]
-        self.target = [_l2.strip() for _l2 in open(path + "." + to_lang, "r").readlines()]
+        source = [self.add_padding(_l1.strip())
+                  for _l1 in open(path + "." + from_lang, "r").readlines()]
+        target = [self.add_padding(_l2.strip())
+                  for _l2 in open(path + "." + to_lang, "r").readlines()]
 
         LOGGER.info(" Success.")
+
+        return source, target
 
     def __call__(self, text, margin=5):
         self.transformer.eval()
@@ -141,7 +144,7 @@ class Translator:
         def _padding(tokens):
             return torch.cat((torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]]),
                               torch.tensor(tokens),
-                              torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]])))
+                              torch.tensor([self.config.tokenizer["special_symbols"]["[EOS]"]])))
 
         # For multi-tokenizer support:
         # (Edit parts where `self.add_padding` is used to include the language mapping.)
@@ -150,22 +153,31 @@ class Translator:
 
         return _transform(self.tokenizer.encode, _padding)
 
-    def _split_epoch(self, batch):
-        src = [random.sample(self.source, k=batch) for _ in range(len(self.source) // batch)]
-        tgt = [random.sample(self.target, k=batch) for _ in range(len(self.target) // batch)]
+    @staticmethod
+    def _split_epoch(batch, source, target):
+        src = [random.sample(source, k=batch) for _ in range(len(source) // batch)]
+        tgt = [random.sample(target, k=batch) for _ in range(len(target) // batch)]
         return src, tgt
 
-    def train_epoch(self, batch_size=128):
+    def train_epoch(self, batch_size=128, source=None, target=None):
         LOGGER.debug("Training the model one epoch.")
 
-        if not self.source or not self.target:
+        if not source or not target:
             raise ValueError("No data loaded for the model.")
 
         self.transformer.train()
         losses = 0
 
-        dataset = self._split_epoch(batch=batch_size)
-        for src, tgt in zip(dataset):
+        batchwise = self._split_epoch(batch=batch_size, source=source, target=target)
+
+        for src, tgt in zip(*batchwise):
+            src = torch.nn.utils.rnn.pad_sequence(
+                src, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+            )
+            tgt = torch.nn.utils.rnn.pad_sequence(
+                tgt, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+            )
+
             src = src.to(self.config.device)
             tgt = tgt.to(self.config.device)
 
@@ -182,23 +194,31 @@ class Translator:
             loss.backward()
 
             self.optimizer.step()
-            losses += loss.item() / len(" ".join([_src for _src in src]))
+            losses += loss.item() / src.shape[0]
+
+            print(losses)
+            break
 
         return losses
 
-    def evaluate(self, batch_size=128):
+    def evaluate(self, batch_size=128, source=None, target=None):
         LOGGER.debug("Evaluating the model.")
 
-        if not self.source or not self.target:
+        if not source or not target:
             raise ValueError("No data loaded for the model.")
 
         self.transformer.eval()
         losses = 0
 
-        dataset = self._split_epoch(batch=batch_size)
-        for src, tgt in zip(dataset):
-            src = src.to(self.config.device)
-            tgt = tgt.to(self.config.device)
+        batchwise = self._split_epoch(batch=batch_size, source=source, target=target)
+
+        for src, tgt in zip(*batchwise):
+            src = torch.nn.utils.rnn.pad_sequence(
+                src, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+            )
+            tgt = torch.nn.utils.rnn.pad_sequence(
+                tgt, padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
+            )
 
             tgt_input = tgt[:-1, :]
 
@@ -208,18 +228,21 @@ class Translator:
 
             tgt_out = tgt[1:, :]
             loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-            losses += loss.item() / len(" ".join([_src for _src in src]))
+            losses += loss.item() / src.shape[0]
 
         return losses
 
-    def train(self, batch_size=128, epochs=5):
+    def train(self, batch_size=128, epochs=5,
+              data_path="./dataset/MultiParaCrawl", from_lang="nb", to_lang="nn"):
         LOGGER.info("Training the model for %s epochs.", epochs)
+
+        source, target = self._data(data_path, from_lang, to_lang)
 
         for epoch in range(1, epochs + 1):
             start_time = time.time()
-            train_loss = self.train_epoch(batch_size)
+            train_loss = self.train_epoch(batch_size, source, target)
             end_time = time.time()
-            val_loss = self.evaluate(batch_size)
+            val_loss = self.evaluate(batch_size, source, target)
 
             LOGGER.info("Epoch: %s, Train loss: %s, Val loss: %s, Epoch time = %ss",
                         epoch, train_loss, val_loss, round(end_time - start_time, 3))
