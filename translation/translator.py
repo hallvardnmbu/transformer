@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 from tokenization.bpe import RegexTokenizer
 
 from config import Hyperparameters
-from seq2seq import Transformer
+from transformer import Transformer
 
 
 os.makedirs("./output", exist_ok=True)
@@ -258,7 +258,7 @@ class Translator(torch.nn.Module):
             loss.backward()
 
             self.optimizer.step()
-            losses += loss.item() / src.shape[0]
+            losses += loss.item() * (src.shape[0] / src.shape[1])
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
@@ -287,7 +287,8 @@ class Translator(torch.nn.Module):
         self.transformer.eval()
         losses = 0
 
-        for src, tgt in zip(source.to_iterable_dataset(), target.to_iterable_dataset()):
+        for src, tgt in zip(source.iter(self.config.batch_size),
+                            target.iter(self.config.batch_size)):
             src = torch.nn.utils.rnn.pad_sequence(
                 [torch.tensor(x) for x in src["tokenized"]],
                 padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
@@ -308,7 +309,8 @@ class Translator(torch.nn.Module):
 
             tgt_out = tgt[1:, :]
             loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-            losses += loss.item() / src.shape[0]
+
+            losses += loss.item() * (src.shape[0] / src.shape[1])
 
         return losses
 
