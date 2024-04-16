@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 @dataclass
 class Hyperparameters:
-    vocab_size: int = 119547
+    vocab_size: int = 50000
     n_encoder_layer: int = 8
     n_decoder_layer: int = 12
     n_head: int = 8
