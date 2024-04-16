@@ -7,7 +7,6 @@ import logging
 import torch
 import datasets
 
-from transformers import AutoTokenizer
 from tokenization.bpe import RegexTokenizer
 
 from config import Hyperparameters
@@ -36,7 +35,7 @@ class Translator(torch.nn.Module):
         self.config = config
         self._setup_metrics()
 
-        self.tokenizer = self._tokenizer(**config.tokenizer)
+        self.tokenizer = self._tokenizer()
         assert self.tokenizer.vocab_size == config.vocab_size
 
         self.loss_fn = config.loss_fn
@@ -54,39 +53,31 @@ class Translator(torch.nn.Module):
             with open(os.path.join(self.config.output_path, "debug.csv"), "w") as debug:
                 debug.write("epoch,iteration,train_loss_batch\n")
 
-    def _tokenizer(self, path="ltg/norbert3-large", vocab_size=None, k=None, **other):
+    def _tokenizer(self):
         """
         Create a tokenizer for the model.
-
-        Parameters
-        ----------
-        path : False or str, optional
-            Whether to use a pretrained tokenizer.
-            False to train a new tokenizer on the datasets.
-            String to load a pretrained tokenizer from huggingface.
-        vocab_size : int, optional
-            Size of the vocabulary for the custom tokenizer.
-        k : int, optional
-            Number of samples to use for training the custom tokenizer.
 
         Returns
         -------
         tokenization.bpe.RegexTokenizer or transformers.AutoTokenizer
         """
-        if not path:
-            source, target = self._data(self.config.from_lang, self.config.to_lang)
-            k = min(len(source), len(target), k)
-            LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
+        if self.config.tokenizer["tokenizer"]:
+            return self.config.tokenizer["tokenizer"]
 
-            tokenizer = RegexTokenizer()
-            tokenizer.add_special_tokens({**other.get("special_symbols", {})})
-            tokenizer.train(
-                text=random.sample(source, k=k) + random.sample(target, k=k),
-                vocab_size=vocab_size
-            )
-            LOGGER.info("> Success.\n")
-            return tokenizer
-        return AutoTokenizer.from_pretrained(path)
+        source, target = self._data(self.config.from_lang, self.config.to_lang)
+        source, target = source["train"]["sentence1"], target["train"]["sentence1"]
+
+        k = min(len(source), len(target), self.config.tokenizer["k"])
+        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
+
+        tokenizer = RegexTokenizer()
+        tokenizer.add_special_tokens(self.config.tokenizer["special_symbols"])
+        tokenizer.train(
+            text=random.sample(source, k=k) + random.sample(target, k=k),
+            vocab_size=self.config.tokenizer["vocab_size"]
+        )
+        LOGGER.info("> Success.\n")
+        return tokenizer
 
     def _data(self, from_lang="nb", to_lang="nn"):
         """
@@ -112,11 +103,11 @@ class Translator(torch.nn.Module):
                     self.config.from_path, self.config.to_path, from_lang, to_lang)
 
         _source = datasets.load_dataset(self.config.from_path, from_lang)
-        source = _source.map(lambda x: {'tokenized': self.tokenize_and_pad(x['sentence1'])})
+        source = _source.map(lambda x: {'tokenized': self.tokenizer.encode(x['sentence1'])})
         source = source.remove_columns(["id", "label", "sentence2"])
 
         _target = datasets.load_dataset(self.config.to_path, to_lang)
-        target = _target.map(lambda x: {'tokenized': self.tokenize_and_pad(x['sentence1'])})
+        target = _target.map(lambda x: {'tokenized': self.tokenizer.encode(x['sentence1'])})
         target = target.remove_columns(["id", "label", "sentence2"])
 
         LOGGER.info("> Success.\n")
@@ -142,7 +133,7 @@ class Translator(torch.nn.Module):
         self.transformer.eval()
         device = self.config.device
 
-        src = self.tokenize_and_pad(text).view(-1, 1)
+        src = torch.tensor(self.tokenizer.encode(text)).view(-1, 1)
         num_tokens = src.shape[0]
         src_mask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
 
@@ -151,7 +142,7 @@ class Translator(torch.nn.Module):
 
         memory = self.transformer.encode(src, src_mask)
         out = torch.ones(1, 1).fill_(
-            self.config.tokenizer["special_symbols"]["[BOS]"]
+            self.config.tokenizer["special_symbols"]["[CLS]"]
         ).type(torch.long).to(device)
 
         for i in range(num_tokens + margin):
@@ -166,28 +157,11 @@ class Translator(torch.nn.Module):
 
             out = torch.cat([out, torch.ones(1, 1).type_as(src.data).fill_(next_word)],
                             dim=0)
-            if next_word == self.config.tokenizer["special_symbols"]["[EOS]"]:
+            if next_word in (self.config.tokenizer["special_symbols"].get("[EOS]", None),
+                             self.config.tokenizer["special_symbols"]["[SEP]"]):
                 break
 
         return self.tokenizer.decode(out.flatten(), skip_special_tokens=True)
-
-    def tokenize_and_pad(self, text):
-        """
-        Add [BOS] and [EOS] (beginning & end of sentence) to an inputted text.
-
-        Parameters
-        ----------
-        text : str
-            The text to be tokenized and padded.
-
-        Returns
-        -------
-        torch.Tensor
-            The tokenized and padded text.
-        """
-        return torch.cat((torch.tensor([self.config.tokenizer["special_symbols"]["[BOS]"]]),
-                          torch.tensor(self.tokenizer.encode(text, add_special_tokens=False)),
-                          torch.tensor([self.config.tokenizer["special_symbols"]["[EOS]"]])))
 
     @staticmethod
     def _split_epoch(batch, source, target):
@@ -258,7 +232,7 @@ class Translator(torch.nn.Module):
             loss.backward()
 
             self.optimizer.step()
-            losses += loss.item() * (src.shape[0] / src.shape[1])
+            losses += loss.item() / src.shape[0]
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
@@ -310,7 +284,7 @@ class Translator(torch.nn.Module):
             tgt_out = tgt[1:, :]
             loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
 
-            losses += loss.item() * (src.shape[0] / src.shape[1])
+            losses += loss.item() / src.shape[0]
 
         return losses
 
@@ -344,7 +318,7 @@ class Translator(torch.nn.Module):
                 with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
                     debug.writelines(f"{epoch},,\n")
 
-            if checkpoints:
+            if checkpoints and epoch % (self.config.epochs // 5) == 0:
                 LOGGER.info("> Saving checkpoint as 'output/model-%s.pth'.", epoch)
                 torch.save(self, f"output/model-{epoch}.pth")
 

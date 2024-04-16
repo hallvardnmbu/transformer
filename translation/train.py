@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
 
-sentence = "Hvilken dag i uka er det i dag?"
+sentence = "Jeg liker å sitte på skolen når jeg jobber."
 
 
 if __name__ == "__main__":
@@ -31,4 +31,4 @@ if __name__ == "__main__":
     LOGGER.info("\n> Translation of '%s' after training:\n  %s",
                 sentence, translator(sentence))
 
-    torch.save(translator, "final_model.pth")
+    torch.save(translator, "output/final_model.pth")
