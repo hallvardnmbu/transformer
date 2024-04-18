@@ -1,6 +1,9 @@
-"""Clean the text of Don Quixote and create question-answer pairs."""
+"""Clean the text of Don Quixote."""
 
-with open("./quixote.txt", "r") as quixote:
+# --------------------------------------------------------------------------------------------------
+# Question -> Answer pairs
+
+with open("./quixote_raw.txt", "r") as quixote:
     book = quixote.readlines()
 
 # Remove header and footer:
@@ -50,3 +53,30 @@ for i, part in enumerate(paragraphs):
 with open("quixote_pairs.txt", "w") as f:
     for pair in pairs:
         f.write(f"{pair[0]}\t{pair[1]}\n")
+
+# --------------------------------------------------------------------------------------------------
+# One line version of the book
+
+with open("./quixote_raw.txt", "r") as quixote:
+    book = quixote.readlines()
+
+# Remove header and footer:
+book = book[2672:42925]
+
+# Remove lines with:
+# no text
+# "*.jpg"
+# "Full Size"
+# only all caps
+book = [line.strip()
+        for line in book
+        if ".jpg" not in line
+        and "Full Size" not in line
+        and not line.isupper()
+        and line.strip()]
+
+line = " ".join(book)
+
+# Save the line to a file:
+with open("quixote_oneline.txt", "w") as f:
+    f.write(f"{line}")

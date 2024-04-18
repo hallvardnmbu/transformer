@@ -1,14 +1,47 @@
 """The GPT Language Model. From https://github.com/karpathy/nanoGPT/blob/master/model.py"""
 
+import math
 import logging
-import inspect
 import torch
 
-from .block import Block, LayerNorm
-from .config import Hyperparameters
+from block import Block, LayerNorm
+from config import Hyperparameters
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+class Embedding(torch.nn.Module):
+    """Embedding class for the Transformer model."""
+    def __init__(self, vocab_size: int, n_embd):
+        """
+        Embedding class for the Transformer model.
+
+        Parameters
+        ----------
+        vocab_size : int
+            The size of the vocabulary.
+        n_embd : int
+            The dimension of the embeddings.
+        """
+        super().__init__()
+
+        self.embedding = torch.nn.Embedding(vocab_size, n_embd)
+        self.n_embd = n_embd
+
+    def forward(self, tokens: torch.Tensor):
+        """
+        Forward pass of the Embedding class.
+
+        Parameters
+        ----------
+        tokens : torch.Tensor
+
+        Returns
+        -------
+        torch.Tensor
+        """
+        return self.embedding(tokens.long()) * math.sqrt(self.n_embd)
 
 
 class GPT(torch.nn.Module):
@@ -30,43 +63,22 @@ class GPT(torch.nn.Module):
         self.config = config
 
         self.transformer = torch.nn.ModuleDict({
-            "wte": torch.nn.Embedding(config.vocab_size, config.n_embd),
-            "wpe": torch.nn.Embedding(config.block_size, config.n_embd),
+            "wte": Embedding(config.vocab_size, config.n_embd),
+            "wpe": Embedding(config.block_size, config.n_embd),
             "drop": torch.nn.Dropout(config.dropout),
             "h": torch.nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             "ln_f": LayerNorm(config.n_embd, bias=config.bias),
         })
-        self.lm_head = torch.nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.generator = torch.nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         # https://paperswithcode.com/method/weight-tying
-        self.transformer.wte.weight = self.lm_head.weight
+        self.transformer.wte.weight = self.generator.weight
 
         self.apply(self._init_weights)
         # Apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith('c_proj.weight'):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / torch.sqrt(2 * config.n_layer))
-
-        LOGGER.info("Number of parameters: %s", self.get_num_params() / 1e6)
-
-    def get_num_params(self, non_embedding=True):
-        """
-        Return the number of parameters in the model.
-
-        Parameters
-        ----------
-        non_embedding: bool, optional
-            If True, subtract the number of parameters in the position embeddings.
-
-        Returns
-        -------
-        n_params : int
-            The number of parameters in the model.
-        """
-        n_params = sum(p.numel() for p in self.parameters())
-        if non_embedding:
-            n_params -= self.transformer.wpe.weight.numel()
-        return n_params
+                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * config.n_layer))
 
     @staticmethod
     def _init_weights(module):
@@ -103,16 +115,13 @@ class GPT(torch.nn.Module):
             The loss of the model, if targets are provided.
         """
         device = idx.device
-        _, t = idx.size()
-
-        assert t <= self.config.block_size, (f"Cannot forward sequence of length {t}, "
-                                             f"block size is only {self.config.block_size}")
-
+        b, t = idx.size()
+        assert t <= self.config.block_size
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
 
-        tok_emb = self.transformer.wte(idx)  # Token embeddings of shape (b, t, n_embd)
-        pos_emb = self.transformer.wpe(pos)  # Position embeddings of shape (t, n_embd)
-
+        # forward the GPT model itself
+        tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
+        pos_emb = self.transformer.wpe(pos)  # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
@@ -120,39 +129,18 @@ class GPT(torch.nn.Module):
 
         # Calculate the loss if targets are provided.
         if targets is not None:
-            logits = self.lm_head(x)
+            logits = self.generator(x)
             loss = torch.nn.functional.cross_entropy(
+                # TODO: Training Q&A instead of next-word.
                 logits.view(-1, logits.size(-1)), targets.view(-1),
-                ignore_index=-1
+                ignore_index=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
             return logits, loss
 
-        # Inference-time mini-optimization: only forward the lm_head on the very last position.
-        logits = self.lm_head(x[:, [-1], :])  # Note: using list [-1] to preserve the time dim.
+        # Inference-time mini-optimization: only forward the generator on the very last position.
+        logits = self.generator(x[:, [-1], :])  # Note: using list [-1] to preserve the time dim.
 
         return logits, None
-
-    def crop_block_size(self, block_size):
-        """
-        Model surgery to decrease the block size if necessary.
-
-        Parameters
-        ----------
-        block_size : int
-            The new block size.
-
-        Notes
-        -----
-        E.g., we may load the GPT2 pretrained model checkpoint (block size 1024) but want to use
-        a smaller block size for some smaller, simpler model.
-        """
-        assert block_size <= self.config.block_size
-        self.config.block_size = block_size
-
-        self.transformer.wpe.weight = torch.nn.Parameter(self.transformer.wpe.weight[:block_size])
-        for block in self.transformer.h:
-            if hasattr(block.attn, 'bias'):
-                block.attn.bias = block.attn.bias[:, :, :block_size, :block_size]
 
     @classmethod
     def from_pretrained(cls, model_type, override_args=None):
@@ -235,79 +223,6 @@ class GPT(torch.nn.Module):
 
         return model
 
-    def configure_optimizers(self, weight_decay, learning_rate, betas, device_type):
-        """
-        Configure the optimizer for the model.
-
-        Parameters
-        ----------
-        weight_decay : float
-        learning_rate : float
-        betas : tuple[float, float]
-        device_type : str
-
-        Returns
-        -------
-        optimizer : torch.optim.AdamW
-            The AdamW optimizer.
-        """
-        param_dict = {pn: p for pn, p in self.named_parameters() if p.requires_grad}
-
-        # Create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
-        # I.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
-
-        optim_groups = [
-            {'params': decay_params, 'weight_decay': weight_decay},
-            {'params': nodecay_params, 'weight_decay': 0.0}
-        ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
-
-        LOGGER.info("Num decayed parameter tensors: %s, with %s parameters",
-                    len(decay_params), num_decay_params)
-        LOGGER.info("Num non-decayed parameter tensors: %s, with %s parameters",
-                    len(nodecay_params), num_nodecay_params)
-
-        # Create AdamW optimizer and use the fused version if it is available.
-        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and device_type == 'cuda'
-        extra_args = {"fused": True} if use_fused else {}
-        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args)
-
-        LOGGER.info("Using fused AdamW: %s", use_fused)
-
-        return optimizer
-
-    def estimate_mfu(self, fwdbwd_per_iter, dt):
-        """
-        Estimate model flops utilization (MFU) in units of A100 bfloat16 peak FLOPS.
-
-        Parameters
-        ----------
-        fwdbwd_per_iter : int
-            Number of forward-backward passes per iteration.
-        dt : float
-            Time in seconds for one forward-backward pass.
-
-        Notes
-        -----
-        First estimate the number of flops we do per iteration.
-        - See PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
-        Express our flops throughput as ratio of A100 bfloat16 peak flops.
-        """
-        N = self.get_num_params()
-        cfg = self.config
-        L, H, Q, T = cfg.n_layer, cfg.n_head, cfg.n_embd // cfg.n_head, cfg.block_size
-        flops_per_token = 6 * N + 12 * L * H * Q * T
-        flops_per_fwdbwd = flops_per_token * T
-        flops_per_iter = flops_per_fwdbwd * fwdbwd_per_iter
-        flops_achieved = flops_per_iter * (1.0 / dt)  # per second
-        flops_promised = 312e12  # A100 GPU bfloat16 peak flops is 312 TFLOPS
-        mfu = flops_achieved / flops_promised
-        return mfu
-
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
         """
@@ -354,4 +269,10 @@ class GPT(torch.nn.Module):
             idx_next = torch.multinomial(probs, num_samples=1)
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
+
+            # TODO: Fix this condition.
+            # if idx_next.item() in (self.config.tokenizer["special_symbols"].get("[EOS]", None),
+            #                        self.config.tokenizer["special_symbols"]["[SEP]"]):
+            #     break
+
         return idx
