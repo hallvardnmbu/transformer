@@ -189,6 +189,7 @@ class RegexTokenizer:
 
         self.merges = merges
         self.special_tokens = special_tokens
+        self.special_mapping = {v: k for k, v in special_tokens.items()}
 
         self.vocab = self._build_vocab()
 
@@ -268,14 +269,14 @@ class RegexTokenizer:
         self.special_tokens = special_tokens
         self.special_mapping = {v: k for k, v in special_tokens.items()}
 
-    def decode(self, ids, skip_special_tokens=False):
+    def decode(self, ids, skip_special_tokens=True):
         """Given a list of integers, return the corresponding string."""
         text_bytes = b"".join([self.vocab[idx]
                                for idx in ids
                                if idx in self.vocab
-                               and (not skip_special_tokens or idx not in self.special_mapping)])
+                               and ((idx not in self.special_mapping)
+                                    if skip_special_tokens else True)])
         text = text_bytes.decode("utf-8", errors="replace")
-
         return text
 
     def _encode_chunk(self, text_bytes):
@@ -295,14 +296,13 @@ class RegexTokenizer:
             ids = merge(ids, pair, idx)
         return ids
 
-    def encode_ordinary(self, text, skip_special_tokens=True):
+    def encode_ordinary(self, text):
         """Encoding that ignores any special tokens."""
-        ids = [self.special_tokens["[CLS]"]] if not skip_special_tokens else []
+        ids = []
         for chunk in regex.findall(self._pattern, text):
             chunk_bytes = chunk.encode("utf-8")
             chunk_ids = self._encode_chunk(chunk_bytes)
             ids.extend(chunk_ids)
-        ids.append(self.special_tokens["[SEP]"]) if not skip_special_tokens else None
         return ids
 
     def encode(self, text, allowed_special="all", **kwargs):
@@ -349,7 +349,7 @@ class RegexTokenizer:
             if part in special:
                 ids.append(special[part])
             else:
-                ids.extend(self.encode_ordinary(part, skip_special_tokens=False))
+                ids.extend(self.encode_ordinary(part))
         ids.append(self.special_tokens["[SEP]"])
 
         return ids
