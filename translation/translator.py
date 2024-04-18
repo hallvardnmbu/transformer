@@ -64,8 +64,8 @@ class Translator(torch.nn.Module):
         if self.config.tokenizer["tokenizer"]:
             return self.config.tokenizer["tokenizer"]
 
-        source, target = self._data(self.config.from_lang, self.config.to_lang)
-        source, target = source["train"]["sentence1"], target["train"]["sentence1"]
+        source, target = self._data()
+        source, target = source["train"]["sentence"], target["train"]["sentence"]
 
         k = min(len(source), len(target), self.config.tokenizer["k"])
         LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
@@ -79,36 +79,35 @@ class Translator(torch.nn.Module):
         LOGGER.info("> Success.\n")
         return tokenizer
 
-    def _data(self, from_lang="nb", to_lang="nn"):
+    def _data(self):
         """
         Load the data from huggingface for the model.
-
-        Parameters
-        ----------
-        from_lang : str, optional
-            The source language.
-        to_lang : str, optional
-            The target language.
 
         Returns
         -------
         datasets.dataset_dict.DatasetDict, datasets.dataset_dict.DatasetDict
             The data for the two languages.
-
-        Note
-        ----
-        The suffixes are defined in the `Hyperparameters` class, as `from_lang` and `to_lang`.
         """
-        LOGGER.info("Loading data from %s and %s for %s -> %s.",
-                    self.config.from_path, self.config.to_path, from_lang, to_lang)
+        LOGGER.info("Loading data from %s for %s.",
+                    self.config.data_path, self.config.data_lang)
 
-        _source = datasets.load_dataset(self.config.from_path, from_lang)
-        source = _source.map(lambda x: {'tokenized': self.tokenizer.encode(x['sentence1'])})
-        source = source.remove_columns(["id", "label", "sentence2"])
+        data = datasets.load_dataset(self.config.data_path, self.config.data_lang)
+        lang1, lang2 = self.config.data_lang.split("-")
 
-        _target = datasets.load_dataset(self.config.to_path, to_lang)
-        target = _target.map(lambda x: {'tokenized': self.tokenizer.encode(x['sentence1'])})
-        target = target.remove_columns(["id", "label", "sentence2"])
+        source = datasets.DatasetDict({
+            split: datasets.Dataset.from_dict({
+                "sentence": [row[lang1] for row in contents['translation']],
+                "tokenized": [self.tokenizer.encode(row[lang1]) for row in contents['translation']]
+            })
+            for split, contents in data.items()
+        })
+        target = datasets.DatasetDict({
+            split: datasets.Dataset.from_dict({
+                "sentence": [row[lang2] for row in contents['translation']],
+                "tokenized": [self.tokenizer.encode(row[lang2]) for row in contents['translation']]
+            })
+            for split, contents in data.items()
+        })
 
         LOGGER.info("> Success.\n")
 
@@ -301,7 +300,7 @@ class Translator(torch.nn.Module):
         """
         LOGGER.info("\nTraining the model for %s epochs.\n", self.config.epochs)
 
-        source, target = self._data(self.config.from_lang, self.config.to_lang)
+        source, target = self._data()
 
         for epoch in range(1, self.config.epochs + 1):
             start_time = time.time()

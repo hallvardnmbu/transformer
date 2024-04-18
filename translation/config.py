@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 @dataclass
 class Hyperparameters:
-    vocab_size: int = 50000
+    vocab_size: int = 65536
     n_encoder_layer: int = 8
     n_decoder_layer: int = 12
     n_head: int = 8
@@ -16,18 +16,15 @@ class Hyperparameters:
     bias: bool = False
 
     epochs: int = 50
-    batch_size: int = 128
+    batch_size: int = 96
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-    from_lang: str = "nb"
-    from_path: str = "NbAiLab/norwegian-paws-x"
-    to_lang: str = "nn"
-    to_path: str = "NbAiLab/norwegian-paws-x"
+    data_lang: str = "en-no"
+    data_path: str = "Helsinki-NLP/opus-100"
 
     tokenizer: dict[str, int or dict[str, int]] = field(
         default_factory=lambda: {
-            "path": "bert-base-multilingual-cased",  # Set to None to train a new tokenizer.
-            # "path": "ltg/norbert3-large",  # Norwegian BERT. Set vocab_size = 50000 above
+            "path": "ltg/nort5-base-en-no-translation",  # Set to None to train a new tokenizer.
 
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
