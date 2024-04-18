@@ -121,7 +121,7 @@ class RegexTokenizer:
         self.merges = {}
 
         self.special_tokens = {}
-        self.inverse_special_tokens = {}
+        self.special_mapping = {}
 
         self.vocab = self._build_vocab()
 
@@ -209,8 +209,11 @@ class RegexTokenizer:
         vocab_size : int
         verbose : bool, optional
         """
-        assert vocab_size >= 256
-        num_merges = vocab_size - 256
+        vocab = self._build_vocab()
+        prior_size = len(vocab)
+
+        assert vocab_size >= prior_size
+        num_merges = vocab_size - prior_size
 
         if isinstance(text, list):
             text = " ".join(text)
@@ -219,7 +222,6 @@ class RegexTokenizer:
 
         # Iteratively merge the most common pairs to create new tokens
         merges = {}
-        vocab = {idx: bytes([idx]) for idx in range(256)}
         for i in range(num_merges):
             stats = {}
             for chunk_ids in ids:
@@ -227,8 +229,13 @@ class RegexTokenizer:
 
             # Create a new token for the most common pair, and replace all occurrences in ids
             # with the new idx.
-            idx = 256 + i
-            pair = max(stats, key=stats.get)
+            idx = prior_size + i
+            try:
+                pair = max(stats, key=stats.get)
+            except ValueError:
+                print("!!! No more merges available !!!")
+                print(i)
+                break
             ids = [merge(chunk_ids, pair, idx) for chunk_ids in ids]
 
             # Update the merges and vocab dictionaries.
@@ -256,23 +263,15 @@ class RegexTokenizer:
             E.g., {'<|endoftext|>': 100257}.
         """
         self.special_tokens = special_tokens
-        self.inverse_special_tokens = {v: k for k, v in special_tokens.items()}
+        self.special_mapping = {v: k for k, v in special_tokens.items()}
 
     def decode(self, ids, skip_special_tokens=False):
         """Given a list of integers, return the corresponding string."""
-        part_bytes = []
-        for idx in ids:
-            if idx in self.vocab:
-                part_bytes.append(self.vocab[idx])
-            elif idx in self.inverse_special_tokens:
-                part_bytes.append(self.inverse_special_tokens[idx].encode("utf-8"))
-            else:
-                raise ValueError(f"invalid token id: {idx}")
-        text_bytes = b"".join(part_bytes)
+        text_bytes = b"".join([self.vocab[idx]
+                               for idx in ids
+                               if idx in self.vocab
+                               and (not skip_special_tokens or idx not in self.special_mapping)])
         text = text_bytes.decode("utf-8", errors="replace")
-
-        if skip_special_tokens:
-            text = "".join([c for c in text if c not in self.special_tokens])
 
         return text
 
@@ -293,16 +292,17 @@ class RegexTokenizer:
             ids = merge(ids, pair, idx)
         return ids
 
-    def encode_ordinary(self, text):
+    def encode_ordinary(self, text, skip_special_tokens=False):
         """Encoding that ignores any special tokens."""
-        ids = []
+        ids = [self.special_tokens["[CLS]"]] if not skip_special_tokens else []
         for chunk in regex.findall(self._pattern, text):
             chunk_bytes = chunk.encode("utf-8")
             chunk_ids = self._encode_chunk(chunk_bytes)
             ids.extend(chunk_ids)
+        ids.append(self.special_tokens["[SEP]"]) if not skip_special_tokens else None
         return ids
 
-    def encode(self, text, allowed_special="none_raise", **kwargs):
+    def encode(self, text, allowed_special="all", **kwargs):
         """
         Unlike encode_ordinary, this function handles special tokens.
 
@@ -341,8 +341,12 @@ class RegexTokenizer:
         special_pattern = "(" + "|".join(regex.escape(k) for k in special) + ")"
         special_chunks = regex.split(special_pattern, text)
 
-        ids = []
+        ids = [self.special_tokens["[CLS]"]]
         for part in special_chunks:
-            ids.append(special[part]) if part in special else ids.extend(self.encode_ordinary(part))
+            if part in special:
+                ids.append(special[part])
+            else:
+                ids.extend(self.encode_ordinary(part, skip_special_tokens=True))
+        ids.append(self.special_tokens["[SEP]"])
 
         return ids
