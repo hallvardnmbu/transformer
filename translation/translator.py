@@ -339,7 +339,7 @@ class Translator(torch.nn.Module):
         torch.Tensor
             The square mask.
         """
-        mask = (torch.triu(torch.ones((dim, dim), device=self.config.device)) == 1).transpose(0, 1)
+        mask = (torch.tril(torch.ones((dim, dim), device=self.config.device)) == 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 

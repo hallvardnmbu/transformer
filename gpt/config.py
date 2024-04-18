@@ -29,7 +29,7 @@ class Hyperparameters:
     """
     block_size: int = 1024
     micro_steps: int = 5 * 8
-    vocab_size: int = 50000
+    vocab_size: int = 24281
     n_layer: int = 12
     n_head: int = 12
     n_embd: int = 768
@@ -71,7 +71,7 @@ class Hyperparameters:
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
             # k: int, optional. Number of characters in dataset to train tokenizer on. None for all.
-            "k": 10000,
+            "k": None,
             "special_symbols": {
                 "[PAD]": 256,
                 "[CLS]": 257,

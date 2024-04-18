@@ -292,6 +292,7 @@ class Quixote(torch.nn.Module):
             lr = self.config.optimizer["lr"] * it / self.config.scheduler["warmup"]
             self.config.optimizer["lr"] = lr
             return lr
+
         # 2) if it > lr_decay_iters, return min learning rate
         if it > self.config.scheduler["max"]:
             return self.config.scheduler["min_lr"]
