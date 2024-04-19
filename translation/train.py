@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
 
-sentence = "Jeg liker å sitte på skolen når jeg jobber."
+sentence = "Hello, my name is Hallvard and I'm a student."
 
 
 if __name__ == "__main__":
