@@ -1,0 +1,111 @@
+Loading data from ./dataset/quixote_oneline.txt.
+Training a custom tokenizer based on None sample sentences.
+Num decayed parameter tensors: 35, with 51414240 parameters
+Num non-decayed parameter tensors: 17, with 8772 parameters
+Using fused AdamW: True
+Loading data from ./dataset/quixote_oneline.txt.
+> Success.
+
+Hyperparameters: 
+Hyperparameters(block_size=1024, micro_steps=40, vocab_size=24540, n_layer=8, n_head=12, n_embd=516, dropout=0.0, bias=False, batch_size=32, epochs=10000, optimizer={'lr': 0.0006, 'betas': (0.9, 0.95), 'eps': 1e-09}, scheduler={'decay_lr': True, 'warmup': 2000, 'max': 600000, 'min_lr': 6e-05}, weight_decay=0.1, grad_clip=1.0, output_path='./output/', data_path='./dataset/quixote_oneline.txt', tokenizer={'path': None, 'bpe_path': './tokenization/tokenizer.model', 'k': None, 'special_symbols': {'[PAD]': 256, '[CLS]': 257, '[SEP]': 258}, 'vocab_size': 24540, 'tokenizer': None})
+
+Transformer architecture: 
+GPT(
+  (transformer): ModuleDict(
+    (wte): Embedding(
+      (embedding): Embedding(24540, 516)
+    )
+    (wpe): Embedding(
+      (embedding): Embedding(1024, 516)
+    )
+    (drop): Dropout(p=0.0, inplace=False)
+    (h): ModuleList(
+      (0-7): 8 x Block(
+        (ln_1): LayerNorm()
+        (attn): CausalSelfAttention(
+          (c_attn): Linear(in_features=516, out_features=1548, bias=False)
+          (c_proj): Linear(in_features=516, out_features=516, bias=False)
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+        )
+        (ln_2): LayerNorm()
+        (mlp): MLP(
+          (c_fc): Linear(in_features=516, out_features=2064, bias=False)
+          (gelu): GELU(approximate='none')
+          (c_proj): Linear(in_features=2064, out_features=516, bias=False)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm()
+  )
+  (generator): Linear(in_features=516, out_features=24540, bias=False)
+)
+
+Vocabulary size: 24540
+
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' before training:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote,inding aims breadth shooting stigmatata amidships obser philosop alleviate direction reinstate quandary landmarks blacksmith sternly inquisitivenessorted Riseix persuaded struggles portrait-serv grandfather cess first maxims daunt
+
+Training the model for 10000 epochs.
+
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' after epoch 400:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote, deser sucked marchionesses Poor Santiago malevolent magician Revul Jerusatakeiositycin Vivsuch provision condemnation Fernan urging disguise bucolic novitiate infeSil-met Unworthy contravention Tora purvey marg
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' after epoch 800:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote, fists—she-block hospit realmsEruct truthfully nuts serve rock shame safety Ques galloping exhal�shalt offences� kicking nicety fertilising phantoms truer godd-sports bodkin sport incline
+Loading data from ./dataset/quixote_oneline.txt.
+Training a custom tokenizer based on None sample sentences.
+Num decayed parameter tensors: 27, with 29561856 parameters
+Num non-decayed parameter tensors: 13, with 4992 parameters
+Using fused AdamW: True
+Loading data from ./dataset/quixote_oneline.txt.
+> Success.
+
+Hyperparameters: 
+Hyperparameters(block_size=256, micro_steps=1, vocab_size=24540, n_layer=6, n_head=6, n_embd=384, dropout=0.2, bias=False, batch_size=32, epochs=10000, optimizer={'lr': 0.001, 'betas': (0.9, 0.99), 'eps': 1e-09}, scheduler={'decay_lr': True, 'warmup': 100, 'max': 5000, 'min_lr': 0.0001}, weight_decay=0.1, grad_clip=1.0, output_path='./output/', data_path='./dataset/quixote_oneline.txt', tokenizer={'path': None, 'bpe_path': './tokenization/tokenizer.model', 'k': None, 'special_symbols': {'[PAD]': 256, '[CLS]': 257, '[SEP]': 258}, 'vocab_size': 24540, 'tokenizer': None})
+
+Transformer architecture: 
+GPT(
+  (transformer): ModuleDict(
+    (wte): Embedding(
+      (embedding): Embedding(24540, 384)
+    )
+    (wpe): Embedding(
+      (embedding): Embedding(256, 384)
+    )
+    (drop): Dropout(p=0.2, inplace=False)
+    (h): ModuleList(
+      (0-5): 6 x Block(
+        (ln_1): LayerNorm()
+        (attn): CausalSelfAttention(
+          (c_attn): Linear(in_features=384, out_features=1152, bias=False)
+          (c_proj): Linear(in_features=384, out_features=384, bias=False)
+          (attn_dropout): Dropout(p=0.2, inplace=False)
+          (resid_dropout): Dropout(p=0.2, inplace=False)
+        )
+        (ln_2): LayerNorm()
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=False)
+          (gelu): GELU(approximate='none')
+          (c_proj): Linear(in_features=1536, out_features=384, bias=False)
+          (dropout): Dropout(p=0.2, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm()
+  )
+  (generator): Linear(in_features=384, out_features=24540, bias=False)
+)
+
+Vocabulary size: 24540
+
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' before training:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote, unmo aims breadth shooting stigmatata amidships obser philosop alleviate direction reinstate blunt landmarks blacksmith persp inquisitivenessorted Rise nois persuaded struggles wed-serv grandfather cess Hipp maxims crazed
+
+Training the model for 10000 epochs.
+
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' after epoch 400:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote, deser deal might Poor Santiago malevolent magician Revul Jerusatake afternoon, bysuch provision condemnation Fernan urging disguise not novitiate infe bulkier for frequently contravention Following, marg
+> Translation of '“I hold thou art in the right of it, Sancho,” quoth Don Quixote,' after epoch 800:
+  “I hold thou art in the right of it, Sancho,” quoth Don Quixote, at the golden, “Eruct, and serve any four safety thou,” said the many offences “ kicking something into phantoms devices or penalty, love.
+> Saving checkpoint as 'output/model-1000.pth'.
