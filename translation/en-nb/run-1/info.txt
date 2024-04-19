@@ -1,0 +1,344 @@
+Hyperparameters: 
+Hyperparameters(vocab_size=65536, n_encoder_layer=8, n_decoder_layer=12, n_head=8, n_embd=512, dropout=0.1, bias=False, epochs=50, batch_size=96, device='cuda', data_lang='en-no', data_path='Helsinki-NLP/opus-100', tokenizer={'path': 'ltg/nort5-base-en-no-translation', 'k': 500, 'special_symbols': {'[UNK]': 0, '[CLS]': 1, '[SEP]': 2, '[PAD]': 3, '[MASK]': 4, '[BOS]': 5, '[EOS]': 6, '[MASK_0]': 7, '[MASK_1]': 8, '[MASK_2]': 9, '[MASK_3]': 10, '[MASK_4]': 11, '[MASK_5]': 12, '[MASK_6]': 13, '[MASK_7]': 14, '[MASK_8]': 15, '[MASK_9]': 16, '[MASK_10]': 17, '[MASK_11]': 18, '[MASK_12]': 19, '[MASK_13]': 20, '[MASK_14]': 21, '[MASK_15]': 22, '[MASK_16]': 23, '[MASK_17]': 24, '[MASK_18]': 25, '[MASK_19]': 26, '[MASK_20]': 27, '[MASK_21]': 28, '[MASK_22]': 29, '[MASK_23]': 30, '[MASK_24]': 31, '[MASK_25]': 32, '[MASK_26]': 33, '[MASK_27]': 34, '[MASK_28]': 35, '[MASK_29]': 36, '[MASK_30]': 37, '[MASK_31]': 38, '[MASK_32]': 39, '[MASK_33]': 40, '[MASK_34]': 41, '[MASK_35]': 42, '[MASK_36]': 43, '[MASK_37]': 44, '[MASK_38]': 45, '[MASK_39]': 46, '[MASK_40]': 47, '[MASK_41]': 48, '[MASK_42]': 49, '[MASK_43]': 50, '[MASK_44]': 51, '[MASK_45]': 52, '[MASK_46]': 53, '[MASK_47]': 54, '[MASK_48]': 55, '[MASK_49]': 56, '[MASK_50]': 57, '[MASK_51]': 58, '[MASK_52]': 59, '[MASK_53]': 60, '[MASK_54]': 61, '[MASK_55]': 62, '[MASK_56]': 63, '[MASK_57]': 64, '[MASK_58]': 65, '[MASK_59]': 66, '[MASK_60]': 67, '[MASK_61]': 68, '[MASK_62]': 69, '[MASK_63]': 70, '[MASK_64]': 71, '[MASK_65]': 72, '[MASK_66]': 73, '[MASK_67]': 74, '[MASK_68]': 75, '[MASK_69]': 76, '[MASK_70]': 77, '[MASK_71]': 78, '[MASK_72]': 79, '[MASK_73]': 80, '[MASK_74]': 81, '[MASK_75]': 82, '[MASK_76]': 83, '[MASK_77]': 84, '[MASK_78]': 85, '[MASK_79]': 86, '[MASK_80]': 87, '[MASK_81]': 88, '[MASK_82]': 89, '[MASK_83]': 90, '[MASK_84]': 91, '[MASK_85]': 92, '[MASK_86]': 93, '[MASK_87]': 94, '[MASK_88]': 95, '[MASK_89]': 96, '[MASK_90]': 97, '[MASK_91]': 98, '[MASK_92]': 99, '[MASK_93]': 100, '[MASK_94]': 101, '[MASK_95]': 102, '[MASK_96]': 103, '[MASK_97]': 104, '[MASK_98]': 105, '[MASK_99]': 106, '>>nob<<': 50000, '>>nno<<': 50001, 'Ġ>>nob<<': 50002, 'Ġ>>nno<<': 50003, '>>eng<<': 50004, 'Ġ>>eng<<': 50005}, 'vocab_size': 65536, 'tokenizer': PreTrainedTokenizerFast(name_or_path='ltg/nort5-base-en-no-translation', vocab_size=65536, model_max_length=1000000000000000019884624838656, is_fast=True, padding_side='right', truncation_side='right', special_tokens={'bos_token': '[BOS]', 'eos_token': '[EOS]', 'unk_token': '[UNK]', 'sep_token': '[SEP]', 'pad_token': '[PAD]', 'cls_token': '[CLS]', 'mask_token': '[MASK]'}, clean_up_tokenization_spaces=True),  added_tokens_decoder={
+	0: AddedToken("[UNK]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	1: AddedToken("[CLS]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	2: AddedToken("[SEP]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	3: AddedToken("[PAD]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	4: AddedToken("[MASK]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	5: AddedToken("[BOS]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	6: AddedToken("[EOS]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	7: AddedToken("[MASK_0]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	8: AddedToken("[MASK_1]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	9: AddedToken("[MASK_2]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	10: AddedToken("[MASK_3]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	11: AddedToken("[MASK_4]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	12: AddedToken("[MASK_5]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	13: AddedToken("[MASK_6]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	14: AddedToken("[MASK_7]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	15: AddedToken("[MASK_8]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	16: AddedToken("[MASK_9]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	17: AddedToken("[MASK_10]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	18: AddedToken("[MASK_11]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	19: AddedToken("[MASK_12]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	20: AddedToken("[MASK_13]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	21: AddedToken("[MASK_14]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	22: AddedToken("[MASK_15]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	23: AddedToken("[MASK_16]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	24: AddedToken("[MASK_17]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	25: AddedToken("[MASK_18]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	26: AddedToken("[MASK_19]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	27: AddedToken("[MASK_20]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	28: AddedToken("[MASK_21]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	29: AddedToken("[MASK_22]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	30: AddedToken("[MASK_23]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	31: AddedToken("[MASK_24]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	32: AddedToken("[MASK_25]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	33: AddedToken("[MASK_26]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	34: AddedToken("[MASK_27]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	35: AddedToken("[MASK_28]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	36: AddedToken("[MASK_29]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	37: AddedToken("[MASK_30]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	38: AddedToken("[MASK_31]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	39: AddedToken("[MASK_32]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	40: AddedToken("[MASK_33]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	41: AddedToken("[MASK_34]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	42: AddedToken("[MASK_35]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	43: AddedToken("[MASK_36]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	44: AddedToken("[MASK_37]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	45: AddedToken("[MASK_38]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	46: AddedToken("[MASK_39]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	47: AddedToken("[MASK_40]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	48: AddedToken("[MASK_41]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	49: AddedToken("[MASK_42]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50: AddedToken("[MASK_43]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	51: AddedToken("[MASK_44]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	52: AddedToken("[MASK_45]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	53: AddedToken("[MASK_46]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	54: AddedToken("[MASK_47]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	55: AddedToken("[MASK_48]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	56: AddedToken("[MASK_49]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	57: AddedToken("[MASK_50]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	58: AddedToken("[MASK_51]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	59: AddedToken("[MASK_52]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	60: AddedToken("[MASK_53]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	61: AddedToken("[MASK_54]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	62: AddedToken("[MASK_55]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	63: AddedToken("[MASK_56]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	64: AddedToken("[MASK_57]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	65: AddedToken("[MASK_58]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	66: AddedToken("[MASK_59]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	67: AddedToken("[MASK_60]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	68: AddedToken("[MASK_61]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	69: AddedToken("[MASK_62]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	70: AddedToken("[MASK_63]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	71: AddedToken("[MASK_64]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	72: AddedToken("[MASK_65]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	73: AddedToken("[MASK_66]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	74: AddedToken("[MASK_67]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	75: AddedToken("[MASK_68]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	76: AddedToken("[MASK_69]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	77: AddedToken("[MASK_70]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	78: AddedToken("[MASK_71]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	79: AddedToken("[MASK_72]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	80: AddedToken("[MASK_73]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	81: AddedToken("[MASK_74]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	82: AddedToken("[MASK_75]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	83: AddedToken("[MASK_76]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	84: AddedToken("[MASK_77]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	85: AddedToken("[MASK_78]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	86: AddedToken("[MASK_79]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	87: AddedToken("[MASK_80]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	88: AddedToken("[MASK_81]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	89: AddedToken("[MASK_82]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	90: AddedToken("[MASK_83]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	91: AddedToken("[MASK_84]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	92: AddedToken("[MASK_85]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	93: AddedToken("[MASK_86]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	94: AddedToken("[MASK_87]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	95: AddedToken("[MASK_88]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	96: AddedToken("[MASK_89]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	97: AddedToken("[MASK_90]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	98: AddedToken("[MASK_91]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	99: AddedToken("[MASK_92]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	100: AddedToken("[MASK_93]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	101: AddedToken("[MASK_94]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	102: AddedToken("[MASK_95]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	103: AddedToken("[MASK_96]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	104: AddedToken("[MASK_97]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	105: AddedToken("[MASK_98]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	106: AddedToken("[MASK_99]", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50000: AddedToken(">>nob<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50001: AddedToken(">>nno<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50002: AddedToken("Ġ>>nob<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50003: AddedToken("Ġ>>nno<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50004: AddedToken(">>eng<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+	50005: AddedToken("Ġ>>eng<<", rstrip=False, lstrip=False, single_word=False, normalized=False, special=True),
+}}, loss_fn=CrossEntropyLoss(), optimizer={'lr': 0.0001, 'betas': (0.9, 0.98), 'eps': 1e-09}, output_path='./output/')
+
+Transformer architecture: 
+Transformer(
+  (transformer): Transformer(
+    (encoder): TransformerEncoder(
+      (layers): ModuleList(
+        (0-7): 8 x TransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.1, inplace=False)
+          (dropout2): Dropout(p=0.1, inplace=False)
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+    (decoder): TransformerDecoder(
+      (layers): ModuleList(
+        (0-11): 12 x TransformerDecoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (multihead_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.1, inplace=False)
+          (dropout2): Dropout(p=0.1, inplace=False)
+          (dropout3): Dropout(p=0.1, inplace=False)
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (src_tok_emb): Embedding(
+    (embedding): Embedding(65536, 512)
+  )
+  (tgt_tok_emb): Embedding(
+    (embedding): Embedding(65536, 512)
+  )
+  (positional_encoding): PositionalEncoding(
+    (dropout): Dropout(p=0.1, inplace=False)
+  )
+  (generator): Linear(in_features=512, out_features=65536, bias=True)
+)
+
+Vocabulary size: 65536
+
+> Translation of 'Hi, what are you doing over there?' before training:
+   bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge bevilge
+
+Training the model for 50 epochs.
+
+Loading data from Helsinki-NLP/opus-100 for en-no.
+> Success.
+
+> Evaluating the model.
+
+Epoch: 1, Train loss: 1641.9881665874284, Val loss: 4.892217907693098, Epoch time = 3033.124s
+> Saving checkpoint as 'output/model-1.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 1:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 2, Train loss: 1445.7896242400318, Val loss: 5.687471966943153, Epoch time = 2877.268s
+> Saving checkpoint as 'output/model-2.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 2:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 3, Train loss: 1359.2117576780902, Val loss: 5.678079271471539, Epoch time = 2871.994s
+> Saving checkpoint as 'output/model-3.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 3:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 4, Train loss: 1320.228757396369, Val loss: 5.647443801117682, Epoch time = 2861.299s
+> Saving checkpoint as 'output/model-4.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 4:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 5, Train loss: 1306.018924724322, Val loss: 5.699058526288135, Epoch time = 2858.583s
+> Saving checkpoint as 'output/model-5.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 5:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 6, Train loss: 1299.284486192298, Val loss: 5.743680786211704, Epoch time = 2868.767s
+> Saving checkpoint as 'output/model-6.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 6:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 7, Train loss: 1296.4156005919124, Val loss: 5.824355764518034, Epoch time = 2864.489s
+> Saving checkpoint as 'output/model-7.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 7:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 8, Train loss: 1285.3164413084653, Val loss: 5.8177773713273035, Epoch time = 2879.958s
+> Saving checkpoint as 'output/model-8.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 8:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 9, Train loss: 1268.1985490321579, Val loss: 5.753839869462369, Epoch time = 2862.869s
+> Saving checkpoint as 'output/model-9.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 9:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 10, Train loss: 1263.4432214198575, Val loss: 5.948920568321035, Epoch time = 2854.324s
+> Saving checkpoint as 'output/model-10.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 10:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 11, Train loss: 1261.3847129674587, Val loss: 6.143180487034774, Epoch time = 2857.796s
+> Saving checkpoint as 'output/model-11.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 11:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 12, Train loss: 1258.6107164559437, Val loss: 6.008658465263515, Epoch time = 2857.85s
+> Saving checkpoint as 'output/model-12.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 12:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 13, Train loss: 1261.529602117798, Val loss: 6.169564430485072, Epoch time = 2860.104s
+> Saving checkpoint as 'output/model-13.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 13:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 14, Train loss: 1258.685557863852, Val loss: 6.031940739905359, Epoch time = 2861.605s
+> Saving checkpoint as 'output/model-14.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 14:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 15, Train loss: 1255.718256485671, Val loss: 6.170165744073818, Epoch time = 2875.562s
+> Saving checkpoint as 'output/model-15.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 15:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 16, Train loss: 1253.2669362507158, Val loss: 6.328893599151393, Epoch time = 3035.8s
+> Saving checkpoint as 'output/model-16.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 16:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 17, Train loss: 1250.2961501148525, Val loss: 6.167008904563476, Epoch time = 2900.835s
+> Saving checkpoint as 'output/model-17.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 17:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 18, Train loss: 1238.7540411041116, Val loss: 5.968274763566212, Epoch time = 2870.355s
+> Saving checkpoint as 'output/model-18.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 18:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 19, Train loss: 1233.829255467721, Val loss: 6.152686914463465, Epoch time = 2866.005s
+> Saving checkpoint as 'output/model-19.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 19:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 20, Train loss: 1224.3097769710769, Val loss: 6.205244368407847, Epoch time = 2865.14s
+> Saving checkpoint as 'output/model-20.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 20:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 21, Train loss: 1215.353444084376, Val loss: 6.364387453784872, Epoch time = 2861.542s
+> Saving checkpoint as 'output/model-21.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 21:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 22, Train loss: 1214.3199342065452, Val loss: 6.174537201126469, Epoch time = 2867.8s
+> Saving checkpoint as 'output/model-22.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 22:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 23, Train loss: 1209.1397502695372, Val loss: 6.283042168085188, Epoch time = 2870.243s
+> Saving checkpoint as 'output/model-23.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 23:
+   Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei
+> Evaluating the model.
+
+Epoch: 24, Train loss: 1205.4409199743832, Val loss: 6.624766377883802, Epoch time = 2867.576s
+> Saving checkpoint as 'output/model-24.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 24:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 25, Train loss: 1203.9555915841026, Val loss: 6.959897153732703, Epoch time = 2865.828s
+> Saving checkpoint as 'output/model-25.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 25:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 26, Train loss: 1200.489727865344, Val loss: 6.686184032073683, Epoch time = 2862.197s
+> Saving checkpoint as 'output/model-26.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 26:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
+> Evaluating the model.
+
+Epoch: 27, Train loss: 1198.5579567868194, Val loss: 6.779856495817363, Epoch time = 2860.817s
+> Saving checkpoint as 'output/model-27.pth'.
+> Translation of 'Hi, what are you doing over there?' after epoch 27:
+   Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva Hva
