@@ -202,8 +202,7 @@ class Translator(torch.nn.Module):
             self.optimizer.zero_grad()
 
             tgt_out = tgt[1:, :]
-            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]),
-                                tgt_out.reshape(-1, self.config.vocab_size))
+            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
             loss.backward()
 
             self.optimizer.step()
@@ -258,8 +257,7 @@ class Translator(torch.nn.Module):
             logits = self.transformer(src, tgt_input, src_m, tgt_m, src_pad_m, tgt_pad_m, src_pad_m)
 
             tgt_out = tgt[1:, :]
-            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]),
-                                tgt_out.reshape(-1, self.config.vocab_size))
+            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
 
             losses += loss.item() / src.shape[0]
 

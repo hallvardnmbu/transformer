@@ -37,7 +37,7 @@ class Hyperparameters:
     bias: bool = False
 
     batch_size: int = 64
-    epochs: int = 50000
+    epochs: int = 5000
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
