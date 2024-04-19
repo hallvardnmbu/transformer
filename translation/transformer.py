@@ -25,13 +25,12 @@ class PositionalEncoding(torch.nn.Module):
         """
         super().__init__()
 
-        den = torch.exp(- torch.arange(0, n_embd, 2)* math.log(10000) / n_embd)
+        den = torch.exp(- torch.arange(0, n_embd, 2) * math.log(10000) / n_embd)
         pos = torch.arange(0, maxlen).reshape(maxlen, 1)
 
         pos_embedding = torch.zeros((maxlen, n_embd))
         pos_embedding[:, 0::2] = torch.sin(pos * den)
         pos_embedding[:, 1::2] = torch.cos(pos * den)
-
         pos_embedding = pos_embedding.unsqueeze(-2)
 
         self.dropout = torch.nn.Dropout(dropout)
@@ -103,7 +102,7 @@ class Transformer(torch.nn.Module):
             nhead=config.n_head,
             num_encoder_layers=config.n_encoder_layer,
             num_decoder_layers=config.n_decoder_layer,
-            dim_feedforward=config.n_embd * 4,
+            dim_feedforward=config.n_feedforward,
             dropout=config.dropout
         )
 

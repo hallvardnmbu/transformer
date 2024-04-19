@@ -8,8 +8,9 @@ from transformers import AutoTokenizer
 @dataclass
 class Hyperparameters:
     vocab_size: int = 65536
-    n_encoder_layer: int = 8
-    n_decoder_layer: int = 12
+    n_feedforward: int = 512
+    n_encoder_layer: int = 3
+    n_decoder_layer: int = 3
     n_head: int = 8
     n_embd: int = 512
     dropout: float = 0.1

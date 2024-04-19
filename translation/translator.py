@@ -13,8 +13,8 @@ from config import Hyperparameters
 from transformer import Transformer
 
 
-os.makedirs("./output", exist_ok=True)
-handler = logging.FileHandler('./output/info.txt')
+os.makedirs(Hyperparameters.output_path, exist_ok=True)
+handler = logging.FileHandler(Hyperparameters.output_path + 'info.txt')
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
@@ -45,8 +45,6 @@ class Translator(torch.nn.Module):
 
     def _setup_metrics(self):
         """Create the metric file(s) for the model – to be filled during training."""
-        os.makedirs(os.path.dirname(self.config.output_path), exist_ok=True)
-
         with open(os.path.join(self.config.output_path, "loss.csv"), "w") as loss:
             loss.write("epoch,train_loss,val_loss\n")
         if LOGGER.isEnabledFor(logging.DEBUG):
@@ -162,30 +160,7 @@ class Translator(torch.nn.Module):
 
         return self.tokenizer.decode(out.flatten(), skip_special_tokens=True)
 
-    @staticmethod
-    def _split_epoch(batch, source, target):
-        """
-        Split the epoch into batches.
-
-        Parameters
-        ----------
-        batch : int
-            The batch size.
-        source : list[list[int]] or any
-            The source data.
-        target : list[list[int]] or any
-            The target data.
-
-        Returns
-        -------
-        list, list
-            The batchwise split data for the two languages.
-        """
-        src = [random.sample(source, k=batch) for _ in range(len(source) // batch)]
-        tgt = [random.sample(target, k=batch) for _ in range(len(target) // batch)]
-        return src, tgt
-
-    def train_epoch(self, source, target):
+    def epoch(self, source, target):
         """
         Train the model for one epoch.
 
@@ -227,7 +202,8 @@ class Translator(torch.nn.Module):
             self.optimizer.zero_grad()
 
             tgt_out = tgt[1:, :]
-            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
+            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]),
+                                tgt_out.reshape(-1, self.config.vocab_size))
             loss.backward()
 
             self.optimizer.step()
@@ -239,6 +215,7 @@ class Translator(torch.nn.Module):
 
         return losses
 
+    @torch.no_grad()
     def evaluate(self, source, target):
         """
         Evaluate the model.
@@ -260,8 +237,8 @@ class Translator(torch.nn.Module):
         self.transformer.eval()
         losses = 0
 
-        for src, tgt in zip(source.iter(self.config.batch_size),
-                            target.iter(self.config.batch_size)):
+        for i, (src, tgt) in enumerate(zip(source.iter(self.config.batch_size),
+                                           target.iter(self.config.batch_size))):
             src = torch.nn.utils.rnn.pad_sequence(
                 [torch.tensor(x) for x in src["tokenized"]],
                 padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
@@ -281,7 +258,8 @@ class Translator(torch.nn.Module):
             logits = self.transformer(src, tgt_input, src_m, tgt_m, src_pad_m, tgt_pad_m, src_pad_m)
 
             tgt_out = tgt[1:, :]
-            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
+            loss = self.loss_fn(logits.reshape(-1, logits.shape[-1]),
+                                tgt_out.reshape(-1, self.config.vocab_size))
 
             losses += loss.item() / src.shape[0]
 
@@ -300,11 +278,12 @@ class Translator(torch.nn.Module):
         """
         LOGGER.info("\nTraining the model for %s epochs.\n", self.config.epochs)
 
+        checkpoint = self.config.epochs // 10 if checkpoints else self.config.epochs
         source, target = self._data()
 
         for epoch in range(1, self.config.epochs + 1):
             start_time = time.time()
-            train_loss = self.train_epoch(source["train"], target["train"])
+            train_loss = self.epoch(source["train"], target["train"])
             end_time = time.time()
             val_loss = self.evaluate(source["validation"], target["validation"])
 
@@ -317,11 +296,11 @@ class Translator(torch.nn.Module):
                 with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
                     debug.writelines(f"{epoch},,\n")
 
-            if checkpoints and epoch % (self.config.epochs // 5) == 0:
-                LOGGER.info("> Saving checkpoint as 'output/model-%s.pth'.", epoch)
-                torch.save(self, f"output/model-{epoch}.pth")
+            if epoch % checkpoint == 0:
+                LOGGER.info(f"> Saving checkpoint as '{self.config.output_path}model-{epoch}.pth'.")
+                torch.save(self, os.path.join(self.config.output_path, f"model-{epoch}.pth"))
 
-            if sentence:
+            if sentence and epoch % checkpoint == 0:
                 LOGGER.info("> Translation of '%s' after epoch %s:\n  %s",
                             sentence, epoch, self(sentence))
 
@@ -339,33 +318,20 @@ class Translator(torch.nn.Module):
         torch.Tensor
             The square mask.
         """
-        mask = (torch.tril(torch.ones((dim, dim), device=self.config.device)) == 1)
+        mask = (torch.triu(torch.ones((dim, dim), device=self.config.device)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
     def masking(self, src, tgt):
-        """
-        Create masks for the source and target data.
-
-        Parameters
-        ----------
-        src : torch.Tensor
-            The source data.
-        tgt : torch.Tensor
-            The target data.
-
-        Returns
-        -------
-        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-            The source mask, target mask, source padding mask, and target padding mask.
-        """
         src_seq_len = src.shape[0]
         tgt_seq_len = tgt.shape[0]
 
-        tgt_m = self.square_mask(tgt_seq_len).to(self.config.device)
         src_m = torch.zeros((src_seq_len, src_seq_len), device=self.config.device).type(torch.bool)
+        tgt_m = self.square_mask(tgt_seq_len).to(self.config.device)
 
-        src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
-        tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
+        src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(
+            self.config.device)
+        tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(
+            self.config.device)
 
         return src_m, tgt_m, src_pad_m, tgt_pad_m
