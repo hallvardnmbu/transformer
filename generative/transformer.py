@@ -150,8 +150,6 @@ class GPT(torch.nn.Module):
             The temperature for sampling.
         top_k : int, optional
             The top-k value for sampling.
-        until : int, optional
-            The token index to stop at.
 
         Returns
         -------
