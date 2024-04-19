@@ -23,12 +23,12 @@ if __name__ == "__main__":
     LOGGER.info("\nTransformer architecture: \n%s", quixote.transformer.eval())
     LOGGER.info("\nVocabulary size: %s", quixote.tokenizer.vocab_size)
 
-    LOGGER.info("\n> Translation of '%s' before training:\n  %s",
+    LOGGER.info("\n> Continuation of '%s' before training:\n  %s",
                 sentence, quixote(sentence))
 
     quixote.learn(checkpoints=True, sentence=sentence)
 
-    LOGGER.info("\n> Translation of '%s' after training:\n  %s",
+    LOGGER.info("\n> Continuation of '%s' after training:\n  %s",
                 sentence, quixote(sentence))
 
     torch.save(quixote, "output/final_model.pth")

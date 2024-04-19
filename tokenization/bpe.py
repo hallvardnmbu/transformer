@@ -238,7 +238,7 @@ class RegexTokenizer:
                 pair = max(stats, key=stats.get)
             except ValueError:
                 print("!!! No more merges available !!!")
-                print(i)
+                print("Final vocab size:", idx - 1)
                 break
             ids = [merge(chunk_ids, pair, idx) for chunk_ids in ids]
 

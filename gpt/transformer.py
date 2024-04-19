@@ -1,14 +1,9 @@
 """The GPT Language Model. From https://github.com/karpathy/nanoGPT/blob/master/model.py"""
 
 import math
-import logging
 import torch
 
 from block import Block, LayerNorm
-from config import Hyperparameters
-
-
-LOGGER = logging.getLogger(__name__)
 
 
 class Embedding(torch.nn.Module):
@@ -119,7 +114,6 @@ class GPT(torch.nn.Module):
         assert t <= self.config.block_size
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
 
-        # forward the GPT model itself
         tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos)  # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
@@ -127,101 +121,17 @@ class GPT(torch.nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
 
-        # Calculate the loss if targets are provided.
         if targets is not None:
             logits = self.generator(x)
             loss = torch.nn.functional.cross_entropy(
-                # TODO: Training Q&A instead of next-word.
                 logits.view(-1, logits.size(-1)), targets.view(-1),
                 ignore_index=self.config.tokenizer["special_symbols"]["[PAD]"]
             )
             return logits, loss
 
-        # Inference-time mini-optimization: only forward the generator on the very last position.
         logits = self.generator(x[:, [-1], :])  # Note: using list [-1] to preserve the time dim.
 
         return logits, None
-
-    @classmethod
-    def from_pretrained(cls, model_type, override_args=None):
-        """
-        Load a pretrained GPT model from the Huggingface Transformers library.
-
-        Parameters
-        ----------
-        model_type : str
-            The model type to load. One of 'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'.
-        override_args : dict, optional
-            Override arguments for the model.
-
-        Returns
-        -------
-        model : GPT
-            The pretrained GPT model.
-        """
-        assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
-        override_args = override_args or {}
-
-        # Only dropout can be overridden see more notes below
-        assert all(k == 'dropout' for k in override_args)
-
-        from transformers import GPT2LMHeadModel  # pylint: disable=import-outside-toplevel
-        LOGGER.info("Loading weights from pretrained GPT: %s", model_type)
-
-        # n_layer, n_head and n_embd are determined from model_type
-        config_args = {
-            'gpt2': {"n_layer": 12, "n_head": 12, "n_embd": 768},   # 124M params
-            'gpt2-medium': {"n_layer": 24, "n_head": 16, "n_embd": 1024},  # 350M params
-            'gpt2-large': {"n_layer": 36, "n_head": 20, "n_embd": 1280},  # 774M params
-            'gpt2-xl': {"n_layer": 48, "n_head": 25, "n_embd": 1600},  # 1558M params
-        }[model_type]
-
-        LOGGER.info("Forcing vocab_size=50257, block_size=1024, bias=True")
-        config_args['vocab_size'] = 50257   # always 50257 for GPT model checkpoints
-        config_args['block_size'] = 1024    # always 1024 for GPT model checkpoints
-        config_args['bias'] = True          # always True for GPT model checkpoints
-
-        if 'dropout' in override_args:
-            print(f"overriding dropout rate to {override_args['dropout']}")
-            config_args['dropout'] = override_args['dropout']
-
-        # Create a from-scratch initialized karpathy/nanoGPT model.
-        config = Hyperparameters(**config_args)
-        model = GPT(config)
-        sd = model.state_dict()
-        sd_keys = sd.keys()
-        sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')]  # Discard this mask / buffer
-
-        # Fetch the huggingface/transformers model.
-        model_hf = GPT2LMHeadModel.from_pretrained(model_type)
-        sd_hf = model_hf.state_dict()
-
-        # Copy while ensuring all the parameters are aligned and match in names and shapes.
-        sd_keys_hf = sd_hf.keys()
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.masked_bias')]
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.bias')]
-        transposed = ['attn.c_attn.weight',
-                      'attn.c_proj.weight',
-                      'mlp.c_fc.weight',
-                      'mlp.c_proj.weight']
-
-        # OpenAI's checkpoints use a "Conv1D" module, but we only want to use a vanilla Linear
-        # this means that we have to transpose these weights when we import them.
-        assert len(sd_keys_hf) == len(sd_keys), (f"mismatched keys: "
-                                                 f"{len(sd_keys_hf)} != {len(sd_keys)}")
-        for k in sd_keys_hf:
-            if any(k.endswith(w) for w in transposed):
-                # Special treatment for the Conv1D weights we need to transpose.
-                assert sd_hf[k].shape[::-1] == sd[k].shape
-                with torch.no_grad():
-                    sd[k].copy_(sd_hf[k].t())
-            else:
-                # Vanilla copy over the other parameters.
-                assert sd_hf[k].shape == sd[k].shape
-                with torch.no_grad():
-                    sd[k].copy_(sd_hf[k])
-
-        return model
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
@@ -240,6 +150,8 @@ class GPT(torch.nn.Module):
             The temperature for sampling.
         top_k : int, optional
             The top-k value for sampling.
+        until : int, optional
+            The token index to stop at.
 
         Returns
         -------
@@ -250,29 +162,27 @@ class GPT(torch.nn.Module):
         -----
         The temperature is a hyperparameter that controls the randomness of the sampling.
         """
+        idx = idx.to(self.config.device)
         for _ in range(max_new_tokens):
-            # if the sequence context is growing too long we must crop it at block_size
+            # If the sequence context is growing too long we must crop it at block_size.
             idx_cond = idx \
                 if idx.size(1) <= self.config.block_size \
                 else idx[:, -self.config.block_size:]
-            # forward the model to get the logits for the index in the sequence
+
             logits, _ = self(idx_cond)
-            # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / temperature
-            # optionally crop the logits to only the top k options
+
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
-            # apply softmax to convert logits to (normalized) probabilities
+
             probs = torch.nn.functional.softmax(logits, dim=-1)
-            # sample from the distribution
+
             idx_next = torch.multinomial(probs, num_samples=1)
-            # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
 
-            # TODO: Fix this condition.
-            # if idx_next.item() in (self.config.tokenizer["special_symbols"].get("[EOS]", None),
-            #                        self.config.tokenizer["special_symbols"]["[SEP]"]):
-            #     break
+            if idx_next.item() in (self.config.tokenizer["special_symbols"].get("[EOS]", None),
+                                   self.config.tokenizer["special_symbols"]["[SEP]"]):
+                break
 
         return idx

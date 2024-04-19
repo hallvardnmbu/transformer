@@ -27,28 +27,28 @@ class Hyperparameters:
     bias: bool, optional
         Whether to use bias in the linear layers.
     """
-    block_size: int = 1024
-    micro_steps: int = 5 * 8
-    vocab_size: int = 24281
-    n_layer: int = 12
-    n_head: int = 12
-    n_embd: int = 768
-    dropout: float = 0.0
+    block_size: int = 256
+    micro_steps: int = 8 * 4
+    vocab_size: int = 24540
+    n_layer: int = 6
+    n_head: int = 6
+    n_embd: int = 384
+    dropout: float = 0.2
     bias: bool = False
 
-    batch_size: int = 12
-    epochs: int = 10
+    batch_size: int = 64
+    epochs: int = 50000
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
-            "lr": 6e-4, "betas": (0.9, 0.95), "eps": 1e-9,
+            "lr": 1e-3, "betas": (0.9, 0.99), "eps": 1e-9,
         }
     )
     scheduler: dict[str, int] = field(
         default_factory=lambda: {
             "decay_lr": True,
-            "warmup": 2000, "max": 600000,
-            "min_lr": 6e-5,
+            "warmup": 100, "max": 5000,
+            "min_lr": 1e-4,
         }
     )
     weight_decay: float = 1e-1
@@ -57,7 +57,7 @@ class Hyperparameters:
     output_path: str = './output/'
     data_path: str = './dataset/quixote_oneline.txt'
 
-    eval_iters = 10
+    eval_iters = 2
     checkpoints = True
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

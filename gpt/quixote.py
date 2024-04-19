@@ -15,8 +15,8 @@ from config import Hyperparameters
 from transformer import GPT
 
 
-os.makedirs("./output", exist_ok=True)
-handler = logging.FileHandler('./output/info.txt')
+os.makedirs(Hyperparameters.output_path, exist_ok=True)
+handler = logging.FileHandler(Hyperparameters.output_path + "/info.txt")
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
@@ -56,17 +56,12 @@ class Quixote(torch.nn.Module):
         self.transformer.to(config.device)
         self.optimizer = self._optimizer()
 
-        self.data = self._data()
+        self._data()
 
     def _setup_metrics(self):
         """Create the metric file(s) for the model – to be filled during training."""
-        os.makedirs(os.path.dirname(self.config.output_path), exist_ok=True)
-
         with open(os.path.join(self.config.output_path, "loss.csv"), "w") as loss:
             loss.write("epoch,train_loss,val_loss\n")
-        if LOGGER.isEnabledFor(logging.DEBUG):
-            with open(os.path.join(self.config.output_path, "debug.csv"), "w") as debug:
-                debug.write("epoch,iteration,train_loss_batch\n")
 
     def _optimizer(self):
         """
@@ -163,16 +158,14 @@ class Quixote(torch.nn.Module):
         LOGGER.info("Loading data from %s.", self.config.data_path)
 
         text = open(self.config.data_path, "r").readline()
-        # pairs = [pair.strip().split("\t") for pair in pairs]
 
         if tokenizer:
             return text
 
         self.data = self.tokenizer.encode(text, allowed_special="none")
-        # self.data = [(self.tokenizer.encode(x), self.tokenizer.encode(y)) for x, y in pairs]
         LOGGER.info("> Success.\n")
 
-    def __call__(self, text, margin=10, temperature=1.0, top_k=None):
+    def __call__(self, text, generate=10, temperature=1.0, top_k=None):
         """
         Translate the input text.
 
@@ -180,8 +173,12 @@ class Quixote(torch.nn.Module):
         ----------
         text : str
             The text to be translated.
-        margin : int, optional
-            An added number of tokens that may be generated (length of the input text + `margin`).
+        generate : int, optional
+            Number of tokens to generate.
+        temperature : float, optional
+            The temperature for the softmax.
+        top_k : int, optional
+            The number of top-k tokens to sample from.
 
         Returns
         -------
@@ -190,29 +187,16 @@ class Quixote(torch.nn.Module):
         """
         self.transformer.eval()
 
-        prompt = torch.tensor(self.tokenizer.encode(text)).view(-1, 1)
-        num_tokens = prompt.shape[0] + margin
+        prompt = torch.tensor([self.tokenizer.encode(text)[:-1]])
 
-        # (LongTensor of shape (b, t))  # TODO
         generated = self.transformer.generate(
-            prompt, num_tokens, temperature, top_k,
-            until=self.config.tokenizer["special_symbols"]["[SEP]"]
+            prompt, generate, temperature, top_k,
         )
 
-        return self.tokenizer.decode(generated.flatten(), skip_special_tokens=True)
+        return self.tokenizer.decode(generated.flatten().tolist(), skip_special_tokens=True)
 
     def get_batch(self):
         ix = torch.randint(len(self.data) - self.config.block_size, (self.config.batch_size,))
-
-        # TODO: Padded matrix with Q&A instead of the current next-word prediction.
-        # x = torch.nn.utils.rnn.pad_sequence(
-        #     [torch.tensor(self.data[i][0]) for i in ix],
-        #     padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
-        # ).transpose(0, 1)
-        # y = torch.nn.utils.rnn.pad_sequence(
-        #     [torch.tensor(self.data[i][1]) for i in ix],
-        #     padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
-        # ).transpose(0, 1)
 
         x = torch.stack([torch.tensor(self.data[i:i + self.config.block_size]) for i in ix])
         y = torch.stack([torch.tensor(self.data[i + 1:i + 1 + self.config.block_size]) for i in ix])
@@ -232,14 +216,15 @@ class Quixote(torch.nn.Module):
         Parameters
         ----------
         checkpoints : bool, optional
-            Whether to save the model after each epoch.
+            Whether to save the model every `epochs // 10`.
         sentence : str, optional
             A sentence to translate during training to visualise progress.
         """
         LOGGER.info("\nTraining the model for %s epochs.\n", self.config.epochs)
 
-        best_loss = float('inf')
         scaler = torch.cuda.amp.GradScaler(enabled=(self.config.dtype == 'float16'))
+
+        checkpoint = self.config.epochs // 10 if checkpoints else self.config.epochs
 
         x, y = self.get_batch()
         for epoch in range(1, self.config.epochs + 1):
@@ -268,27 +253,23 @@ class Quixote(torch.nn.Module):
             end_time = time.time()
             loss = loss.item() * self.config.micro_steps
 
-            LOGGER.info("\nEpoch: %s, Train loss: %s, Val loss: %s, Epoch time = %ss",
+            LOGGER.info("\nEpoch: %s, Train loss: %s, Epoch time = %ss",
                         epoch, loss, round(end_time - start_time, 3))
 
             with open(os.path.join(self.config.output_path, "loss.csv"), "a") as metrics:
-                metrics.writelines(f"{epoch},{loss},{self.estimate_loss()}\n")
-            if LOGGER.isEnabledFor(logging.DEBUG):
-                with open(os.path.join(self.config.output_path, "debug.csv"), "a") as debug:
-                    debug.writelines(f"{epoch},,\n")
+                metrics.writelines(f"{epoch},{loss},{self.evaluate()}\n")
 
-            if ((checkpoints and epoch % (self.config.epochs // 5) == 0)
-                    or (checkpoints and loss < best_loss)):
-                LOGGER.info("> Saving checkpoint as 'output/model-%s.pth'.", epoch)
-                torch.save(self, f"output/model-{epoch}.pth")
+            if epoch % checkpoint == 0:
+                LOGGER.info(f"> Saving checkpoint as '{self.config.output_path}model-{epoch}.pth'.")
+                torch.save(self, self.config.output_path + f"model-{epoch}.pth")
 
-            if sentence:
-                LOGGER.info("> Translation of '%s' after epoch %s:\n  %s",
+            if sentence and epoch % checkpoint == 0:
+                LOGGER.info("> Continuation of '%s' after epoch %s:\n  %s",
                             sentence, epoch, self(sentence))
 
     def get_lr(self, it):
         # 1) linear warmup for warmup_iters steps
-        if it < self.scheduler["warmup"]:
+        if it < self.config.scheduler["warmup"]:
             lr = self.config.optimizer["lr"] * it / self.config.scheduler["warmup"]
             self.config.optimizer["lr"] = lr
             return lr
@@ -318,50 +299,3 @@ class Quixote(torch.nn.Module):
         losses = losses.mean().item()
         self.transformer.train()
         return losses
-
-    # TODO: Padded matrix with Q&A instead of the current next-word prediction.
-
-    # def square_mask(self, dim):
-    #     """
-    #     Create a square mask with the given dimension.
-    #
-    #     Parameters
-    #     ----------
-    #     dim : int
-    #         The dimension for the square mask.
-    #
-    #     Returns
-    #     -------
-    #     torch.Tensor
-    #         The square mask.
-    #     """
-    #     mask = (torch.triu(torch.ones((dim, dim), device=self.config.device)) == 1).transpose(0, 1)
-    #     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    #     return mask
-    #
-    # def masking(self, src, tgt):
-    #     """
-    #     Create masks for the source and target data.
-    #
-    #     Parameters
-    #     ----------
-    #     src : torch.Tensor
-    #         The source data.
-    #     tgt : torch.Tensor
-    #         The target data.
-    #
-    #     Returns
-    #     -------
-    #     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-    #         The source mask, target mask, source padding mask, and target padding mask.
-    #     """
-    #     src_seq_len = src.shape[0]
-    #     tgt_seq_len = tgt.shape[0]
-    #
-    #     tgt_m = self.square_mask(tgt_seq_len).to(self.config.device)
-    #     src_m = torch.zeros((src_seq_len, src_seq_len), device=self.config.device).type(torch.bool)
-    #
-    #     src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
-    #     tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
-    #
-    #     return src_m, tgt_m, src_pad_m, tgt_pad_m
