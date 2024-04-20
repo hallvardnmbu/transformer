@@ -165,6 +165,7 @@ class Quixote(torch.nn.Module):
         self.data = self.tokenizer.encode(text, allowed_special="none")
         LOGGER.info("> Success.\n")
 
+    @torch.no_grad()
     def __call__(self, text, generate=10, temperature=1.0, top_k=None):
         """
         Translate the input text.

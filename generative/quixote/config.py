@@ -27,17 +27,17 @@ class Hyperparameters:
     bias: bool, optional
         Whether to use bias in the linear layers.
     """
-    block_size: int = 256
-    micro_steps: int = 8 * 4
     vocab_size: int = 24540
-    n_layer: int = 6
-    n_head: int = 6
-    n_embd: int = 384
-    dropout: float = 0.2
+    n_feedforward: int = 512
+    n_encoder_layer: int = 3
+    n_decoder_layer: int = 3
+    n_head: int = 8
+    n_embd: int = 512
+    dropout: float = 0.1
     bias: bool = False
 
+    epochs: int = 50
     batch_size: int = 64
-    epochs: int = 5000
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
@@ -55,9 +55,9 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './dataset/quixote_oneline.txt'
+    data_path: str = '../dataset/quixote/quixote_pairs.txt'
 
-    eval_iters = 2
+    eval_iters = 1
     checkpoints = True
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -68,7 +68,7 @@ class Hyperparameters:
             "path": None,  # None: train new tokenizer else path to huggingface tokenizer
 
             # Only used if `path` is None. Set `bpe_path` to None to train a new tokenizer.
-            "bpe_path": '../tokenization/quixote/tokenizer.model',
+            "bpe_path": '../../tokenization/quixote/tokenizer.model',
 
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
@@ -86,6 +86,13 @@ class Hyperparameters:
             "tokenizer": None,
         }
     )
+    loss_fn: torch.nn.CrossEntropyLoss = None
+
+    optimizer: dict[str, int] = field(
+        default_factory=lambda: {
+            "lr": 0.0001, "betas": (0.9, 0.98), "eps": 1e-9
+        }
+    )
 
     def __post_init__(self):
         if self.tokenizer["path"]:
@@ -94,3 +101,7 @@ class Hyperparameters:
             self.tokenizer["special_symbols"] = self.tokenizer["tokenizer"].added_tokens_encoder
         else:
             self.tokenizer["vocab_size"] = self.vocab_size
+
+        self.loss_fn = torch.torch.nn.CrossEntropyLoss(
+            ignore_index=self.tokenizer["special_symbols"]["[PAD]"]
+        )

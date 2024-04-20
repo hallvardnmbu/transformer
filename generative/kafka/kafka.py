@@ -20,7 +20,7 @@ LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
 
 
-class Translator(torch.nn.Module):
+class Kafka(torch.nn.Module):
     def __init__(self, config=Hyperparameters()):
         """
         Initialize the Translator class.
@@ -61,23 +61,27 @@ class Translator(torch.nn.Module):
         """
         if self.config.tokenizer["tokenizer"]:
             return self.config.tokenizer["tokenizer"]
+        if self.config.tokenizer["bpe_path"]:
+            tokenizer = RegexTokenizer()
+            tokenizer.load(self.config.tokenizer["bpe_path"])
+            return tokenizer
 
-        source, target = self._data()
-        source, target = source["train"]["sentence"], target["train"]["sentence"]
+        text = self._data(tokenizer=True)
 
-        k = min(len(source), len(target), self.config.tokenizer["k"])
-        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
+        k = min(len(text), self.config.tokenizer["k"]) if self.config.tokenizer["k"] else False
+        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", k)
 
         tokenizer = RegexTokenizer()
         tokenizer.add_special_tokens(self.config.tokenizer["special_symbols"])
         tokenizer.train(
-            text=random.sample(source, k=k) + random.sample(target, k=k),
+            text=random.sample(text, k=k) if k else text,
             vocab_size=self.config.tokenizer["vocab_size"]
         )
+        tokenizer.save("kafka")
         LOGGER.info("> Success.\n")
         return tokenizer
 
-    def _data(self):
+    def _data(self, tokenizer=False):
         """
         Load the data from huggingface for the model.
 
@@ -86,25 +90,36 @@ class Translator(torch.nn.Module):
         datasets.dataset_dict.DatasetDict, datasets.dataset_dict.DatasetDict
             The data for the two languages.
         """
-        LOGGER.info("Loading data from %s for %s.",
-                    self.config.data_path, self.config.data_lang)
+        if tokenizer:
+            return open(self.config.data_path.split("_")[0] + "oneline.txt", 'r').read()
 
-        data = datasets.load_dataset(self.config.data_path, self.config.data_lang)
-        lang1, lang2 = self.config.data_lang.split("-")
+        text = open(self.config.data_path, 'r').read()
+        text = [(line.split('\t')[0], line.split('\t')[1])
+                for line in text.split('\n') if len(line.split('\t')) == 2]
+
+        random.shuffle(text)
+        test = text[:100]
+        train = text[100:]
 
         source = datasets.DatasetDict({
-            split: datasets.Dataset.from_dict({
-                "sentence": [row[lang1] for row in contents['translation']],
-                "tokenized": [self.tokenizer.encode(row[lang1]) for row in contents['translation']]
+            "train": datasets.Dataset.from_dict({
+                "sentence": [q for q, a in train],
+                "tokenized": [self.tokenizer.encode(q) for q, a in train]
+            }),
+            "validation": datasets.Dataset.from_dict({
+                "sentence": [q for q, a in test],
+                "tokenized": [self.tokenizer.encode(q) for q, a in test]
             })
-            for split, contents in data.items()
         })
         target = datasets.DatasetDict({
-            split: datasets.Dataset.from_dict({
-                "sentence": [row[lang2] for row in contents['translation']],
-                "tokenized": [self.tokenizer.encode(row[lang2]) for row in contents['translation']]
+            "train": datasets.Dataset.from_dict({
+                "sentence": [a for q, a in train],
+                "tokenized": [self.tokenizer.encode(a) for q, a in train]
+            }),
+            "validation": datasets.Dataset.from_dict({
+                "sentence": [a for q, a in test],
+                "tokenized": [self.tokenizer.encode(a) for q, a in test]
             })
-            for split, contents in data.items()
         })
 
         LOGGER.info("> Success.\n")
