@@ -66,7 +66,9 @@ class Hyperparameters:
     tokenizer: dict[str, int or dict[str, int]] = field(
         default_factory=lambda: {
             "path": None,  # None: train new tokenizer else path to huggingface tokenizer
-            "bpe_path": './tokenizer/tokenizer.model',  # None: train tokenizer if `path` is None
+
+            # Only used if `path` is None. Set `bpe_path` to None to train a new tokenizer.
+            "bpe_path": '../tokenization/quixote/tokenizer.model',
 
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
