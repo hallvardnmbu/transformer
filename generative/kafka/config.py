@@ -69,7 +69,7 @@ class Hyperparameters:
 
             # Only used if `path` is None. Set `bpe_path` to None to train a new tokenizer.
             # "bpe_path": None,
-            "bpe_path": '../../tokenization/quixote/tokenizer.model',
+            "bpe_path": '../../tokenization/quixote/quixote.model',
 
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
