@@ -5,7 +5,9 @@ Norwegian University of Life Sciences (NMBU)
 
 ---
 
-The models are marked with "* `<path>`".
+Various models were created and trained. The code for these, along with the results are presented
+in their respective directories. The different models are seen below, marked with "* `<path>`". The
+actual model checkpoints are not included in this repository, but can be provided upon request.
 
 Translation
   * `nb_nn/`
@@ -19,7 +21,7 @@ Translation
     Therefore, also better results.
 
 Generative
-  Don Quixote (quixote)
+  Miguel de Cervantes (Don Quixote)
 
     Next word prediction:
     * `quixote/variants/big/`
@@ -34,7 +36,7 @@ Generative
       Small model.
       OK results.
 
-  Franz Kafka (kafka)
+  Franz Kafka
   * `kafka/`
     Small model.
     Good results.
