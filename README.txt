@@ -15,7 +15,7 @@ Translation
     Small and poor dataset.
     Therefore, also quite poor results.
 
-  * `nb_nn/`
+  * `en_nb/`
     English to Norwegian Bokmål
     Bigger and better dataset.
     Therefore, also better results.
