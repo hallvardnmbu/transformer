@@ -5,6 +5,48 @@ Norwegian University of Life Sciences (NMBU)
 
 ---
 
+The models are marked with "* `<path>`".
+
+Translation
+  * `nb_nn/`
+    Norwegian Bokmål to Norwegian Nynorsk
+    Small and poor dataset.
+    Therefore, also quite poor results.
+
+  * `nb_nn/`
+    English to Norwegian Bokmål
+    Bigger and better dataset.
+    Therefore, also better results.
+
+Generative
+  Don Quixote (quixote)
+
+    Next word prediction:
+    * `quixote/variants/big/`
+      Big model.
+      Slow training (too big model), and therefore not much learned.
+    * `quixote/variants/small/`
+      Small model.
+      Very good model, but predictions continue until forced to stop.
+
+    Next sentence(s) prediction:
+    * `quixote/`
+      Small model.
+      OK results.
+
+  Franz Kafka (kafka)
+  * `kafka/`
+    Small model.
+    Good results.
+
+The theory is presented in `report.pdf`, along with results and simplified implementation examples.
+
+The implementation, examples and results are presented in their corresponding directories. During
+training of the latter four games, Orion HPC (https://orion.nmbu.no) at the Norwegian University of
+Life Sciences (NMBU) provided computational resources.
+
+---
+
 Relevant literature:
 
 - Geometry of deep learning
