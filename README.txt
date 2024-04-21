@@ -24,15 +24,15 @@ Generative
   Miguel de Cervantes (Don Quixote)
 
     Next word prediction:
-    * `quixote/variants/big/`
+    * `cervantes/variants/big/`
       Big model.
       Slow training (too big model), and therefore not much learned.
-    * `quixote/variants/small/`
+    * `cervantes/variants/small/`
       Small model.
       Very good model, but predictions continue until forced to stop.
 
     Next sentence(s) prediction:
-    * `quixote/`
+    * `cervantes/`
       Small model.
       OK results.
 

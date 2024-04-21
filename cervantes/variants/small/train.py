@@ -5,7 +5,7 @@ import logging
 import torch
 
 from config import Hyperparameters
-from quixote.variants.small.quixote import Quixote
+from cervantes.variants.small.quixote import Quixote
 
 
 os.makedirs("./output", exist_ok=True)
