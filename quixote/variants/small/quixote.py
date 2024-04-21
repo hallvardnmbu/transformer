@@ -9,10 +9,9 @@ import logging
 from contextlib import nullcontext
 import torch
 
-from tokenization.bpe import RegexTokenizer
-
 from config import Hyperparameters
 from transformer import GPT
+from tokenization.bpe import RegexTokenizer
 
 
 os.makedirs(Hyperparameters.output_path, exist_ok=True)
@@ -27,6 +26,7 @@ torch.backends.cudnn.allow_tf32 = True
 
 
 class Quixote(torch.nn.Module):
+    """The Quixote model wrapper."""
     def __init__(self, config=Hyperparameters()):
         """
         Initialize the Translator class.
@@ -148,7 +148,7 @@ class Quixote(torch.nn.Module):
 
         Returns
         -------
-        str
+        str or None
             The full string of the data. Only if `tokenizer` is True.
 
         Note
@@ -157,16 +157,18 @@ class Quixote(torch.nn.Module):
         """
         LOGGER.info("Loading data from %s.", self.config.data_path)
 
-        text = open(self.config.data_path, "r").readline()
+        with open(self.config.data_path, "r") as file:
+            text = file.readline()
 
         if tokenizer:
             return text
 
         self.data = self.tokenizer.encode(text, allowed_special="none")
         LOGGER.info("> Success.\n")
+        return None
 
     @torch.no_grad()
-    def __call__(self, text, generate=10, temperature=1.0, top_k=None):
+    def forward(self, text, generate=10, temperature=1.0, top_k=None):
         """
         Translate the input text.
 
@@ -197,6 +199,13 @@ class Quixote(torch.nn.Module):
         return self.tokenizer.decode(generated.flatten().tolist(), skip_special_tokens=True)
 
     def get_batch(self):
+        """
+        Get a batch of data for training.
+
+        Returns
+        -------
+        torch.Tensor, torch.Tensor
+        """
         ix = torch.randint(len(self.data) - self.config.block_size, (self.config.batch_size,))
 
         x = torch.stack([torch.tensor(self.data[i:i + self.config.block_size]) for i in ix])
@@ -223,7 +232,7 @@ class Quixote(torch.nn.Module):
         """
         LOGGER.info("\nTraining the model for %s epochs.\n", self.config.epochs)
 
-        scaler = torch.cuda.amp.GradScaler(enabled=(self.config.dtype == 'float16'))
+        scaler = torch.cuda.amp.GradScaler(enabled=self.config.dtype == 'float16')
 
         checkpoint = self.config.epochs // 10 if checkpoints else self.config.epochs
 
@@ -236,9 +245,9 @@ class Quixote(torch.nn.Module):
 
             start_time = time.time()
 
-            for micro_step in range(self.config.micro_steps):
+            for _ in range(self.config.micro_steps):
                 with self.ctx:
-                    logits, loss = self.transformer(x, y)
+                    _, loss = self.transformer(x, y)
                     loss = loss / self.config.micro_steps
                 x, y = self.get_batch()
                 scaler.scale(loss).backward()
@@ -261,7 +270,8 @@ class Quixote(torch.nn.Module):
                 metrics.writelines(f"{epoch},{loss},{self.evaluate()}\n")
 
             if epoch % checkpoint == 0:
-                LOGGER.info(f"> Saving checkpoint as '{self.config.output_path}model-{epoch}.pth'.")
+                LOGGER.info("> Saving checkpoint as '%smodel-%s.pth'.",
+                            self.config.output_path, epoch)
                 torch.save(self, self.config.output_path + f"model-{epoch}.pth")
 
             if sentence and epoch % checkpoint == 0:
@@ -269,6 +279,21 @@ class Quixote(torch.nn.Module):
                             sentence, epoch, self(sentence))
 
     def get_lr(self, it):
+        """
+        Calculate the learning rate based on the iteration number.
+
+        This method uses linear warmup for initial iterations, then switches to cosine decay.
+
+        Parameters
+        ----------
+        it : int
+            The current iteration number.
+
+        Returns
+        -------
+        float
+            The calculated learning rate for the current iteration.
+        """
         # 1) linear warmup for warmup_iters steps
         if it < self.config.scheduler["warmup"]:
             lr = self.config.optimizer["lr"] * it / self.config.scheduler["warmup"]
@@ -280,22 +305,35 @@ class Quixote(torch.nn.Module):
             return self.config.scheduler["min_lr"]
 
         # 3) in between, use cosine decay down to min learning rate
-        decay_ratio = (it - self.config.scheduler["warmup"]) / (self.config.scheduler["max"] - self.config.scheduler["warmup"])
+        warmup = self.config.scheduler["warmup"]
+        decay_ratio = (it - warmup) / (self.config.scheduler["max"] - warmup)
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
 
-        lr = self.config.scheduler["min_lr"] + coeff * (self.config.optimizer["lr"] - self.config.scheduler["min_lr"])
+        min_lr = self.config.scheduler["min_lr"]
+        lr = min_lr + coeff * (self.config.optimizer["lr"] - min_lr)
         self.config.optimizer["lr"] = lr
         return lr
 
     @torch.no_grad()
     def evaluate(self):
+        """
+        Evaluate the model by calculating the mean loss over a number of iterations.
+
+        This method sets the model to evaluation mode, performs the evaluation, then sets the
+        model back to training mode.
+
+        Returns
+        -------
+        float
+            The mean loss over the evaluation iterations.
+        """
         self.transformer.eval()
         losses = torch.zeros(self.config.eval_iters)
         for k in range(self.config.eval_iters):
             x, y = self.get_batch()
             with self.ctx:
-                logits, loss = self.transformer(x, y)
+                _, loss = self.transformer(x, y)
             losses[k] = loss.item()
         losses = losses.mean().item()
         self.transformer.train()

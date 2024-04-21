@@ -1,3 +1,5 @@
+"""Train the Kafka generative model."""
+
 import os
 import logging
 import torch

@@ -1,3 +1,5 @@
+"""Train a transformer model to translate English to Norwegian Bokmål."""
+
 import os
 import logging
 import torch

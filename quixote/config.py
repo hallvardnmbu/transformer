@@ -1,4 +1,8 @@
-"""Sample GPT configuration. From https://github.com/karpathy/nanoGPT/blob/master/model.py"""
+"""
+Sample generative configuration.
+
+Modified from: https://github.com/karpathy/nanoGPT/blob/master/model.py
+"""
 
 from dataclasses import dataclass, field
 from transformers import AutoTokenizer
@@ -8,24 +12,57 @@ import torch
 @dataclass
 class Hyperparameters:
     """
-    Configuration for the GPT.
+    Hyperparameters for the generative Don Quixote model.
 
     Attributes
     ----------
-    block_size: int, optional
-        Size of the blocks.
-    vocab_size: int, optional
-        Size of the vocabulary.
-    n_layer: int, optional
-        Number of layers.
-    n_head: int, optional
-        Number of attention heads.
-    n_embd: int, optional
-        Dimensionality of embeddings and hidden states.
-    dropout: float, optional
-        Dropout rate.
-    bias: bool, optional
-        Whether to use bias in the linear layers.
+    vocab_size : int, optional
+        The size of the vocabulary. Default is 24540.
+    n_feedforward : int, optional
+        The dimension of the feedforward network model. Default is 512.
+    n_encoder_layer : int, optional
+        The number of encoder layers. Default is 3.
+    n_decoder_layer : int, optional
+        The number of decoder layers. Default is 3.
+    n_head : int, optional
+        The number of heads in the multihead attention models. Default is 8.
+    n_embd : int, optional
+        The dimension of the embeddings. Default is 512.
+    dropout : float, optional
+        The dropout value. Default is 0.1.
+    bias : bool, optional
+        Whether to use bias in the model. Default is False.
+    epochs : int, optional
+        The number of epochs for training. Default is 50.
+    batch_size : int, optional
+        The batch size for training. Default is 64.
+    optimizer : dict[str, int or float], optional
+        The optimizer configuration. Default is a dictionary with certain keys.
+    scheduler : dict[str, int], optional
+        The scheduler configuration. Default is a dictionary with certain keys.
+    weight_decay : float, optional
+        The weight decay. Default is 1e-1.
+    grad_clip : float, optional
+        The gradient clipping. Default is 1.0.
+    output_path : str, optional
+        The path to save the output. Default is './output/'.
+    data_path : str, optional
+        The path to the data. Default is './data/quixote/quixote_pairs.txt'.
+    eval_iters : int, optional
+        The number of iterations for evaluation. Default is 1.
+    checkpoints : bool, optional
+        Whether to save checkpoints. Default is True.
+    device : str, optional
+        The device to use for training. Default is 'cuda' if available, else 'cpu'.
+    dtype : str, optional
+        The data type. Default is 'bfloat16' if 'cuda' is available and supports bf16,
+        else 'float16'.
+    tokenizer : dict[str, int or dict[str, int]], optional
+        The tokenizer configuration. Default is a dictionary with certain keys.
+    loss_fn : torch.nn.CrossEntropyLoss, optional
+        The loss function to use. Default is None.
+    optimizer : dict[str, int], optional
+        The optimizer configuration. Default is a dictionary with certain keys.
     """
     vocab_size: int = 24540
     n_feedforward: int = 512
@@ -95,6 +132,14 @@ class Hyperparameters:
     )
 
     def __post_init__(self):
+        """
+        Post-initialization of the Hyperparameters class.
+
+        Notes
+        -----
+        This method is automatically called after the instance has been initialized.
+        It sets up the tokenizer and loss function based on the provided configuration.
+        """
         if self.tokenizer["path"]:
             self.tokenizer["tokenizer"] = AutoTokenizer.from_pretrained(self.tokenizer["path"])
             self.tokenizer["vocab_size"] = self.vocab_size = self.tokenizer["tokenizer"].vocab_size

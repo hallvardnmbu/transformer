@@ -254,6 +254,7 @@ class RegexTokenizer:
 
     @property
     def vocab_size(self):
+        """Return the size of the vocabulary."""
         return len(self.vocab)
 
     def add_special_tokens(self, special_tokens):
@@ -305,7 +306,7 @@ class RegexTokenizer:
             ids.extend(chunk_ids)
         return ids
 
-    def encode(self, text, allowed_special="all", **kwargs):
+    def encode(self, text, allowed_special="all"):
         """
         Unlike encode_ordinary, this function handles special tokens.
 

@@ -7,10 +7,9 @@ import logging
 import torch
 import datasets
 
-from tokenization.bpe import RegexTokenizer
-
 from config import Hyperparameters
 from transformer import Transformer
+from tokenization.bpe import RegexTokenizer
 
 
 os.makedirs(Hyperparameters.output_path, exist_ok=True)
@@ -21,6 +20,7 @@ LOGGER.addHandler(handler)
 
 
 class Translator(torch.nn.Module):
+    """Translator wrapper for the Transformer model."""
     def __init__(self, config=Hyperparameters()):
         """
         Initialize the Translator class.
@@ -112,7 +112,7 @@ class Translator(torch.nn.Module):
         return source, target
 
     @torch.no_grad()
-    def __call__(self, text, margin=10):
+    def forward(self, text, margin=10):
         """
         Translate the input text.
 
@@ -143,7 +143,7 @@ class Translator(torch.nn.Module):
             self.config.tokenizer["special_symbols"]["[CLS]"]
         ).type(torch.long).to(device)
 
-        for i in range(num_tokens + margin):
+        for _ in range(num_tokens + margin):
             memory = memory.to(device)
             tgt_mask = (self.square_mask(out.size(0)).type(torch.bool)).to(device)
 
@@ -237,8 +237,8 @@ class Translator(torch.nn.Module):
         self.transformer.eval()
         losses = 0
 
-        for i, (src, tgt) in enumerate(zip(source.iter(self.config.batch_size),
-                                           target.iter(self.config.batch_size))):
+        for src, tgt in zip(source.iter(self.config.batch_size),
+                            target.iter(self.config.batch_size)):
             src = torch.nn.utils.rnn.pad_sequence(
                 [torch.tensor(x) for x in src["tokenized"]],
                 padding_value=self.config.tokenizer["special_symbols"]["[PAD]"]
@@ -296,7 +296,8 @@ class Translator(torch.nn.Module):
                     debug.writelines(f"{epoch},,\n")
 
             if epoch % checkpoint == 0:
-                LOGGER.info(f"> Saving checkpoint as '{self.config.output_path}model-{epoch}.pth'.")
+                LOGGER.info("> Saving checkpoint as '%smodel-%s.pth'.",
+                            self.config.output_path, epoch)
                 torch.save(self, os.path.join(self.config.output_path, f"model-{epoch}.pth"))
 
             if sentence and epoch % checkpoint == 0:
@@ -322,6 +323,21 @@ class Translator(torch.nn.Module):
         return mask
 
     def masking(self, src, tgt):
+        """
+        Create the necessary masks for the source and target data.
+
+        Parameters
+        ----------
+        src : torch.Tensor
+            The source data.
+        tgt : torch.Tensor
+            The target data.
+
+        Returns
+        -------
+        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            The source mask, target mask, source padding mask, and target padding mask.
+        """
         src_seq_len = src.shape[0]
         tgt_seq_len = tgt.shape[0]
 

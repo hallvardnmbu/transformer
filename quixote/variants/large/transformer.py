@@ -110,7 +110,7 @@ class GPT(torch.nn.Module):
             The loss of the model, if targets are provided.
         """
         device = idx.device
-        b, t = idx.size()
+        _, t = idx.size()
         assert t <= self.config.block_size
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
 

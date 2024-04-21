@@ -1,9 +1,11 @@
+"""Train a small variant of the Quixote model."""
+
 import os
 import logging
 import torch
 
 from config import Hyperparameters
-from quixote import Quixote
+from quixote.variants.small.quixote import Quixote
 
 
 os.makedirs("./output", exist_ok=True)

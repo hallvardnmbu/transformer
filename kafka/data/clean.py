@@ -1,5 +1,7 @@
 """Clean the text of Franz Kafka."""
 
+import re
+
 # --------------------------------------------------------------------------------------------------
 # Question -> Answer pairs
 
@@ -13,7 +15,6 @@ book = book[831:21105]
 # no text
 # "Page NUMBER"
 # "Translated by X"
-import re
 page = re.compile(r"Page \d+")
 book = [line.strip().replace("”", "\"").replace("“", "\"").replace("_", "").replace("ii ", "")
         for line in book
@@ -73,7 +74,6 @@ book = book[831:21105]
 # no text
 # "Page NUMBER"
 # "Translated by X"
-import re
 page = re.compile(r"Page \d+")
 book = [line.strip().replace("”", "\"").replace("“", "\"").replace("_", "").replace("ii ", "")
         for line in book

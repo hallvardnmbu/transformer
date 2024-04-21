@@ -7,10 +7,9 @@ import logging
 import torch
 import datasets
 
-from tokenization.bpe import RegexTokenizer
-
 from config import Hyperparameters
 from transformer import Transformer
+from tokenization.bpe import RegexTokenizer
 
 
 os.makedirs("./output", exist_ok=True)
@@ -21,6 +20,7 @@ LOGGER.addHandler(handler)
 
 
 class Translator(torch.nn.Module):
+    """Translator model based on the Transformer architecture."""
     def __init__(self, config=Hyperparameters()):
         """
         Initialize the Translator class.
@@ -114,7 +114,7 @@ class Translator(torch.nn.Module):
 
         return source, target
 
-    def __call__(self, text, margin=10):
+    def forward(self, text, margin=10):
         """
         Translate the input text.
 
@@ -145,7 +145,7 @@ class Translator(torch.nn.Module):
             self.config.tokenizer["special_symbols"]["[CLS]"]
         ).type(torch.long).to(device)
 
-        for i in range(num_tokens + margin):
+        for _ in range(num_tokens + margin):
             memory = memory.to(device)
             tgt_mask = (self.square_mask(out.size(0)).type(torch.bool)).to(device)
 
@@ -366,7 +366,8 @@ class Translator(torch.nn.Module):
         tgt_m = self.square_mask(tgt_seq_len).to(self.config.device)
         src_m = torch.zeros((src_seq_len, src_seq_len), device=self.config.device).type(torch.bool)
 
-        src_pad_m = (src == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
-        tgt_pad_m = (tgt == self.config.tokenizer["special_symbols"]["[PAD]"]).transpose(0, 1).to(self.config.device)
+        pad = self.config.tokenizer["special_symbols"]["[PAD]"]
+        src_pad_m = (src == pad).transpose(0, 1).to(self.config.device)
+        tgt_pad_m = (tgt == pad).transpose(0, 1).to(self.config.device)
 
         return src_m, tgt_m, src_pad_m, tgt_pad_m

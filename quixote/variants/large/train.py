@@ -1,9 +1,11 @@
+"""Train a model to generate text continuations of a given sentence."""
+
 import os
 import logging
 import torch
 
 from config import Hyperparameters
-from quixote import Quixote
+from quixote.variants.large.quixote import Quixote
 
 
 os.makedirs("./output", exist_ok=True)

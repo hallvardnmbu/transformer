@@ -1,4 +1,4 @@
-"""Sample GPT configuration."""
+"""Sample Kafka configuration."""
 
 from dataclasses import dataclass, field
 from transformers import AutoTokenizer
@@ -8,24 +8,54 @@ import torch
 @dataclass
 class Hyperparameters:
     """
-    Configuration for the GPT.
+    A class used to represent the hyperparameters of the Kafka model.
 
     Attributes
     ----------
-    block_size: int, optional
-        Size of the blocks.
-    vocab_size: int, optional
-        Size of the vocabulary.
-    n_layer: int, optional
-        Number of layers.
-    n_head: int, optional
-        Number of attention heads.
-    n_embd: int, optional
-        Dimensionality of embeddings and hidden states.
-    dropout: float, optional
-        Dropout rate.
-    bias: bool, optional
-        Whether to use bias in the linear layers.
+    vocab_size : int
+        the size of the vocabulary
+    n_feedforward : int
+        the number of feedforward layers
+    n_encoder_layer : int
+        the number of encoder layers
+    n_decoder_layer : int
+        the number of decoder layers
+    n_head : int
+        the number of attention heads
+    n_embd : int
+        the dimension of the embeddings
+    dropout : float
+        the dropout rate
+    bias : bool
+        whether to use bias in the model
+    epochs : int
+        the number of training epochs
+    batch_size : int
+        the batch size for training
+    optimizer : dict
+        the optimizer configuration
+    scheduler : dict
+        the scheduler configuration
+    weight_decay : float
+        the weight decay for the optimizer
+    grad_clip : float
+        the gradient clipping threshold
+    output_path : str
+        the path to save the output
+    data_path : str
+        the path to the data
+    eval_iters : int
+        the number of iterations between evaluations
+    checkpoints : bool
+        whether to save checkpoints during training
+    device : str
+        the device to use for training
+    dtype : str
+        the data type to use for the tensors
+    tokenizer : dict
+        the tokenizer configuration
+    loss_fn : torch.nn.CrossEntropyLoss
+        the loss function for training
     """
     vocab_size: int = 7000
     n_feedforward: int = 512
@@ -95,6 +125,15 @@ class Hyperparameters:
     )
 
     def __post_init__(self):
+        """
+        Initializes the tokenizer and loss function after the instance is created.
+
+        Notes
+        -----
+        If a tokenizer path is provided, it loads the tokenizer from the pretrained model.
+        Otherwise, it sets the vocabulary size of the tokenizer to the vocabulary size of the model.
+        It also initializes the loss function with the padding token as the ignore index.
+        """
         if self.tokenizer["path"]:
             self.tokenizer["tokenizer"] = AutoTokenizer.from_pretrained(self.tokenizer["path"])
             self.tokenizer["vocab_size"] = self.vocab_size = self.tokenizer["tokenizer"].vocab_size
