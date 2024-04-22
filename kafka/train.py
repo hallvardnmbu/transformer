@@ -19,18 +19,18 @@ sentence = "Where the flower grows."
 
 if __name__ == "__main__":
     config = Hyperparameters()
-    quixote = Kafka(config)
+    kafka = Kafka(config)
 
     LOGGER.info("Hyperparameters: \n%s", config)
-    LOGGER.info("\nTransformer architecture: \n%s", quixote.transformer.eval())
-    LOGGER.info("\nVocabulary size: %s", quixote.tokenizer.vocab_size)
+    LOGGER.info("\nTransformer architecture: \n%s", kafka.transformer.eval())
+    LOGGER.info("\nVocabulary size: %s", kafka.tokenizer.vocab_size)
 
     LOGGER.info("\n> Continuation of '%s' before training:\n  %s",
-                sentence, quixote(sentence))
+                sentence, kafka(sentence))
 
-    quixote.learn(checkpoints=True, sentence=sentence)
+    kafka.learn(checkpoints=True, sentence=sentence)
 
     LOGGER.info("\n> Continuation of '%s' after training:\n  %s",
-                sentence, quixote(sentence))
+                sentence, kafka(sentence))
 
-    torch.save(quixote, "output/final_model.pth")
+    torch.save(kafka, "output/final_model.pth")

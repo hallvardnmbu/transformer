@@ -68,7 +68,8 @@ class Translator(torch.nn.Module):
         source, target = source["train"]["sentence1"], target["train"]["sentence1"]
 
         k = min(len(source), len(target), self.config.tokenizer["k"])
-        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
+        LOGGER.info("Training a custom tokenizer based on %s sample sentences.",
+                    2*k if k else "all")
 
         tokenizer = RegexTokenizer()
         tokenizer.add_special_tokens(self.config.tokenizer["special_symbols"])

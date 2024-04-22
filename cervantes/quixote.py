@@ -70,7 +70,8 @@ class Quixote(torch.nn.Module):
         source, target = source["train"]["sentence"], target["train"]["sentence"]
 
         k = min(len(source), len(target), self.config.tokenizer["k"])
-        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", 2*k)
+        LOGGER.info("Training a custom tokenizer based on %s sample sentences.",
+                    2*k if k else "all")
 
         tokenizer = RegexTokenizer()
         tokenizer.add_special_tokens(self.config.tokenizer["special_symbols"])

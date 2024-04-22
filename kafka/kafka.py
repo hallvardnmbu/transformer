@@ -69,7 +69,8 @@ class Kafka(torch.nn.Module):
         text = self._data(tokenizer=True)
 
         k = min(len(text), self.config.tokenizer["k"]) if self.config.tokenizer["k"] else False
-        LOGGER.info("Training a custom tokenizer based on %s sample sentences.", k)
+        LOGGER.info("Training a custom tokenizer based on %s sample sentences.",
+                    k if k else "all")
 
         tokenizer = RegexTokenizer()
         tokenizer.add_special_tokens(self.config.tokenizer["special_symbols"])
@@ -77,7 +78,7 @@ class Kafka(torch.nn.Module):
             text=random.sample(text, k=k) if k else text,
             vocab_size=self.config.tokenizer["vocab_size"]
         )
-        tokenizer.save("data")
+        tokenizer.save(os.path.join(self.config.output_path, self.__class__.__name__.lower()))
         LOGGER.info("> Success.\n")
         return tokenizer
 

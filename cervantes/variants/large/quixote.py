@@ -133,7 +133,7 @@ class Quixote(torch.nn.Module):
             vocab_size=self.config.tokenizer["vocab_size"]
         )
         LOGGER.info("> Saving the tokenizer to '%s/tokenizer.*'.", self.config.output_path)
-        tokenizer.save(os.path.join(self.config.output_path, "tokenizer"))
+        tokenizer.save(os.path.join(self.config.output_path, self.__class__.__name__.lower()))
         LOGGER.info("> Success.\n")
         return tokenizer
 
