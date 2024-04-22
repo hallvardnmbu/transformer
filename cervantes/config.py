@@ -105,7 +105,7 @@ class Hyperparameters:
             "path": None,  # None: train new tokenizer else path to huggingface tokenizer
 
             # Only used if `path` is None. Set `bpe_path` to None to train a new tokenizer.
-            "bpe_path": '../tokenization/quixote/quixote.model',
+            "bpe_path": '../tokenization/quixote.model',
 
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]

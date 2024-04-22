@@ -9,7 +9,7 @@ import datasets
 
 from config import Hyperparameters
 from transformer import Transformer
-from bpe import RegexTokenizer  # TODO
+from tokenization.bpe import RegexTokenizer
 
 
 os.makedirs(Hyperparameters.output_path, exist_ok=True)
