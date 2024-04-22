@@ -58,16 +58,16 @@ class Hyperparameters:
         the loss function for training
     """
     vocab_size: int = 7000
-    n_feedforward: int = 512
+    n_feedforward: int = 448
     n_encoder_layer: int = 3
     n_decoder_layer: int = 3
-    n_head: int = 8
-    n_embd: int = 512
+    n_head: int = 7
+    n_embd: int = 448
     dropout: float = 0.1
     bias: bool = False
 
     epochs: int = 50
-    batch_size: int = 64
+    batch_size: int = 24
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
@@ -87,7 +87,7 @@ class Hyperparameters:
     output_path: str = './output/'
     data_path: str = './data/bible_qa.txt'
 
-    eval_iters = 2
+    eval_iters = 1
     checkpoints = True
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

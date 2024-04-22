@@ -135,7 +135,7 @@ class Lyrics(torch.nn.Module):
         return source, target
 
     @torch.no_grad()
-    def forward(self, text, margin=50):
+    def forward(self, text, margin=1500, temperature=1.0, top_k=None):
         """
         Translate the input text.
 
@@ -145,6 +145,10 @@ class Lyrics(torch.nn.Module):
             The text to be translated.
         margin : int, optional
             Maximum number of tokens to generate.
+        temperature : float, optional
+            The temperature for the softmax function. Default is 1.0.
+        top_k : int, optional
+            The number of top-k tokens to consider. Default is None.
 
         Returns
         -------
@@ -172,9 +176,14 @@ class Lyrics(torch.nn.Module):
 
             _out = self.transformer.decode(out, memory, tgt_mask)
             _out = _out.transpose(0, 1)
-            prob = self.transformer.generator(_out[:, -1])
-            _, next_word = torch.max(prob, dim=1)
-            next_word = next_word.item()
+            prob = self.transformer.generator(_out[:, -1]) / temperature
+
+            if top_k is not None:
+                v, _ = torch.topk(prob, min(top_k, prob.size(-1)))
+                prob[prob < v[:, [-1]]] = -float('Inf')
+
+            probs = torch.nn.functional.softmax(prob, dim=-1)
+            next_word = torch.multinomial(probs, num_samples=1).item()
 
             out = torch.cat([out, torch.ones(1, 1).type_as(src.data).fill_(next_word)],
                             dim=0)
