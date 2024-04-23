@@ -57,17 +57,17 @@ class Hyperparameters:
     loss_fn : torch.nn.CrossEntropyLoss
         the loss function for training
     """
-    vocab_size: int = 10000
+    vocab_size: int = 5000
     n_feedforward: int = 512
-    n_encoder_layer: int = 3
-    n_decoder_layer: int = 3
+    n_encoder_layer: int = 5
+    n_decoder_layer: int = 5
     n_head: int = 8
     n_embd: int = 512
     dropout: float = 0.1
     bias: bool = False
 
-    epochs: int = 50
-    batch_size: int = 28
+    epochs: int = 100
+    batch_size: int = 12
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
@@ -87,7 +87,7 @@ class Hyperparameters:
     output_path: str = './output/'
     data_path: str = './data/lyrics.csv'
 
-    eval_iters = 2
+    eval_iters = 1
     checkpoints = True
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -103,7 +103,7 @@ class Hyperparameters:
             # ONLY USED WHEN TRAINING A NEW TOKENIZER:
             # special_symbols: {TOKEN: ID, ...}. should include tokens [PAD], [CLS], [SEP]
             # k: int, optional. Number of characters in dataset to train tokenizer on. None for all.
-            "k": 50000,
+            "k": None,
             "special_symbols": {
                 "[PAD]": 256,
                 "[CLS]": 257,

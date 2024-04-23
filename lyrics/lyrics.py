@@ -97,8 +97,8 @@ class Lyrics(torch.nn.Module):
             The data for the two languages.
         """
         with open(self.config.data_path, 'r') as file:
-            reader = csv.reader(file)
-            data = {title: lyrics for title, lyrics in list(reader)[1:]}
+            reader = csv.reader(file, delimiter='+')
+            data = {title: lyrics for title, lyrics in list(reader)[1:] if lyrics}
 
         if tokenizer:
             return list(data.values()) + list(data.values())
@@ -110,21 +110,17 @@ class Lyrics(torch.nn.Module):
 
         source = datasets.DatasetDict({
             "train": datasets.Dataset.from_dict({
-                "sentence": train,
                 "tokenized": [self.tokenizer.encode(title) for title in train]
             }),
             "validation": datasets.Dataset.from_dict({
-                "sentence": test,
                 "tokenized": [self.tokenizer.encode(title) for title in test]
             })
         })
         target = datasets.DatasetDict({
             "train": datasets.Dataset.from_dict({
-                "sentence": [data[title] for title in train],
                 "tokenized": [self.tokenizer.encode(data[title]) for title in train]
             }),
             "validation": datasets.Dataset.from_dict({
-                "sentence": [data[title] for title in test],
                 "tokenized": [self.tokenizer.encode(data[title]) for title in test]
             })
         })
