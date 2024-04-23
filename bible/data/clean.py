@@ -8,7 +8,7 @@ with open("bible_raw.txt", "r") as file:
 bible = bible[5:]
 
 # --------------------------------------------------------------------------------------------------
-# Regular expression to find the paragraphs of the bible. Q&A pairs.
+# Regular expression to find the paragraphs of the bible. Q&A pairs and raw paragraphs.
 
 paragraphs = {}
 pattern = re.compile(r"(.+ \d+):\d+ (.+)")
@@ -26,6 +26,10 @@ for text in paragraphs.values():
 with open("bible_qa.txt", "w") as f:
     for question, answer in qa.items():
         f.write(f"{question}\t{answer}\n")
+
+with open("bible_paragraphs.txt", "w") as f:
+    for paragraph in paragraphs.values():
+        f.write(f"{paragraph}\n")
 
 # --------------------------------------------------------------------------------------------------
 # Regular expression to find the books of the bible.
