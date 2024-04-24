@@ -48,7 +48,12 @@ class PositionalEncoding(torch.nn.Module):
         -------
         torch.Tensor
         """
-        return self.dropout(token_embedding + self.pos_embedding[:token_embedding.size(0), :])
+        pos_embedding = self.pos_embedding
+        if token_embedding.size(0) > self.pos_embedding.size(0):
+            pos_embedding = pos_embedding.repeat(token_embedding.size(0) // self.maxlen + 1, 1, 1)
+            pos_embedding = pos_embedding[:token_embedding.size(0), :]
+
+        return self.dropout(token_embedding + pos_embedding[:token_embedding.size(0), :])
 
 
 class Embedding(torch.nn.Module):
