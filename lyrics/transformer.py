@@ -25,6 +25,8 @@ class PositionalEncoding(torch.nn.Module):
         """
         super().__init__()
 
+        self.maxlen = maxlen
+
         den = torch.exp(- torch.arange(0, n_embd, 2) * math.log(10000) / n_embd)
         pos = torch.arange(0, maxlen).reshape(maxlen, 1)
 
