@@ -31,13 +31,13 @@ class Transformer(torch.nn.Module):
         assert len(keys) == len(sd_keys), f"mismatched keys: {len(keys)} != {len(sd_keys)}"
         for k in keys:
             if any(k.endswith(w) for w in transposed):
-                assert sd_hf[k].shape[::-1] == sd[k].shape
+                assert sd_hf[k].shape[::-1] == sd[k].shape  # pylint: disable=E1136
                 with torch.no_grad():
-                    sd[k].copy_(sd_hf[k].t())
+                    sd[k].copy_(sd_hf[k].t())   # pylint: disable=E1136
             else:
-                assert sd_hf[k].shape == sd[k].shape
+                assert sd_hf[k].shape == sd[k].shape   # pylint: disable=E1136
                 with torch.no_grad():
-                    sd[k].copy_(sd_hf[k])
+                    sd[k].copy_(sd_hf[k])   # pylint: disable=E1136
 
         return model
 

@@ -9,8 +9,8 @@ import logging
 from contextlib import nullcontext
 import torch
 
-from transformer import Transformer
 from config import Hyperparameters
+from transformer import Transformer
 from tokenization.bpe import RegexTokenizer
 
 
