@@ -1,4 +1,4 @@
-"""Clean the text of the bible."""
+"""Clean the text of the Bible."""
 
 import re
 
@@ -8,7 +8,7 @@ with open("bible_raw.txt", "r") as file:
 bible = bible[5:]
 
 # --------------------------------------------------------------------------------------------------
-# Regular expression to find the paragraphs of the bible. Q&A pairs and raw paragraphs.
+# Regular expression to find the paragraphs of the Bible. Q&A pairs and raw paragraphs.
 
 paragraphs = {}
 pattern = re.compile(r"(.+ \d+):\d+ (.+)")
@@ -32,7 +32,7 @@ with open("bible_paragraphs.txt", "w") as f:
         f.write(f"{paragraph}\n")
 
 # --------------------------------------------------------------------------------------------------
-# Regular expression to find the books of the bible.
+# Regular expression to find the books of the Bible.
 
 books = {}
 pattern = re.compile(r"(.+) \d+:\d+ (.+)")
@@ -49,7 +49,7 @@ with open("bible_books.txt", "w") as f:
         f.write(f"{which}\t{text}\n")
 
 # --------------------------------------------------------------------------------------------------
-# Oneline for the bible
+# Oneline for the Bible
 
 oneline = " ".join(books.values())
 with open("bible_oneline.txt", "w") as f:

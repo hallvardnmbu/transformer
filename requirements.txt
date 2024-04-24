@@ -5,3 +5,5 @@ regex
 numpy
 pandas
 matplotlib
+accelerate
+tensorboard

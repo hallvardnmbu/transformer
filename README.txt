@@ -64,14 +64,14 @@ Decoder-only
     Small model.
     Good results, but predictions continue until forced to stop.
 
-  Finetuning of GPT-2
-  -------------------
+  Finetuning GPT-2
+  ----------------
 
     Biblical text generation
     ........................
-    * `gpt2/bible/`
-      Finetuning of GPT-2 on Bible text.
-      Something is wrong, presumably with the tokenization.
+    * `gpt2/`
+      Finetuning of GPT-2 on the Bible.
+      Great results.
 
 ---
 
