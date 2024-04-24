@@ -9,8 +9,8 @@ import logging
 from contextlib import nullcontext
 import torch
 
+from transformer import Transformer
 from config import Hyperparameters
-from transformer import GPT
 from tokenization.bpe import RegexTokenizer
 
 
@@ -24,7 +24,8 @@ torch.manual_seed(2409)
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
-class Model(torch.nn.Module):
+
+class GPT(torch.nn.Module):
     """Wrapper class for the Transformer model."""
     def __init__(self, config=Hyperparameters()):
         """
@@ -51,7 +52,7 @@ class Model(torch.nn.Module):
         self.tokenizer = self._tokenizer()
         assert self.tokenizer.vocab_size == config.vocab_size
 
-        self.transformer = GPT(config) if not config.gpt2 else GPT.gpt2()
+        self.transformer = Transformer(config) if not config.gpt2 else Transformer.gpt2()
         self.transformer.to(config.device)
         self.optimizer = self._optimizer()
 
@@ -146,15 +147,15 @@ class Model(torch.nn.Module):
             The full string of the data. Only if `tokenizer` is True.
         """
         if tokenizer:
-            return open(self.config.data_path.split("_")[0] + "_oneline.txt", 'r').read()
+            return open(self.config.data_path, 'r').read()
 
         with open(self.config.data_path, 'r') as data:
-            text = data.read()
+            text = "\n".join(data.readlines())
         text = self.tokenizer.encode(text)
 
         random.shuffle(text)
-        test = text[:1000]
-        train = text[1000:]
+        test = text[:1500]
+        train = text[1500:]
 
         self.data = {"test": test, "train": train}
 

@@ -5,7 +5,7 @@ import logging
 import torch
 
 from config import Hyperparameters
-from gpt2.model import Model
+from gpt import GPT
 
 
 os.makedirs("./output", exist_ok=True)
@@ -19,7 +19,7 @@ sentence = "Where the flower grows."
 
 if __name__ == "__main__":
     config = Hyperparameters()
-    model = Model(config)
+    model = GPT(config)
 
     LOGGER.info("Hyperparameters: \n%s", config)
     LOGGER.info("\nTransformer architecture: \n%s", model.transformer.eval())

@@ -8,12 +8,12 @@ from block import Block, LayerNorm
 from config import Hyperparameters
 
 
-class GPT(torch.nn.Module):
+class Transformer(torch.nn.Module):
     """The GPT Language Model."""
     @classmethod
     def gpt2(cls):
         """Initialize the GPT-2 model. From Karpathy's nanoGPT."""
-        model = GPT(Hyperparameters())
+        model = Transformer(Hyperparameters())
 
         sd = model.state_dict()
         sd_keys = sd.keys()

@@ -28,8 +28,7 @@ with open("bible_qa.txt", "w") as f:
         f.write(f"{question}\t{answer}\n")
 
 with open("bible_paragraphs.txt", "w") as f:
-    for paragraph in paragraphs.values():
-        f.write(f"{paragraph}\n")
+    f.write("\n".join(paragraphs.values()))
 
 # --------------------------------------------------------------------------------------------------
 # Regular expression to find the books of the bible.

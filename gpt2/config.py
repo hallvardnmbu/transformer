@@ -69,7 +69,7 @@ class Hyperparameters:
     - `dropout = 0.2`
     - `bias = True`
     """
-    gpt2: bool = True
+    gpt2: bool = False
 
     block_size: int = 1024
     micro_steps: int = 8 * 4
@@ -81,7 +81,7 @@ class Hyperparameters:
     bias: bool = True
 
     batch_size: int = 4
-    epochs: int = 10000
+    epochs: int = 700
 
     optimizer: dict[str, int or float] = field(
         default_factory=lambda: {
@@ -98,7 +98,7 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './data/bible_oneline.txt'
+    data_path: str = './data/bible_paragraphs.txt'
 
     eval_iters = 1
     checkpoints = True
