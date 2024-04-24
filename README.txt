@@ -9,37 +9,71 @@ Various models were created and trained. The code for these, along with the resu
 in their respective directories. The different models are seen below, marked with "* `<path>`". The
 actual model checkpoints are not included in this repository, but can be provided upon request.
 
-Translation
-  * `nb_nn/`
+Encoder-decoder (full seq2seq transformer)
+==========================================
+
+  Translation
+  ...........
+  * `nb-nn/`
     Norwegian Bokmål to Norwegian Nynorsk
     Small and poor dataset.
     Therefore, also quite poor results.
-
-  * `en_nb/`
+  * `en-nb/`
     English to Norwegian Bokmål
     Bigger and better dataset.
     Therefore, also better results.
 
-Generative
   Miguel de Cervantes (Don Quixote)
-
-    Next word prediction:
-    * `cervantes/variants/big/`
-      Big model.
-      Slow training (too big model), and therefore not much learned.
-    * `cervantes/variants/small/`
-      Small model.
-      Very good model, but predictions continue until forced to stop.
-
-    Next sentence(s) prediction:
-    * `cervantes/`
-      Small model.
-      OK results.
+  .................................
+  * `cervantes/`
+    Next sentence(s) prediction based on some input.
+    Small model.
+    OK results.
 
   Franz Kafka
+  ...........
   * `kafka/`
+    Next sentence(s) prediction based on some input.
     Small model.
     Good results.
+
+  Bible paragraph generation
+  ..........................
+  * `bible/`
+    Small model.
+    Good results.
+
+  Song lyric generation
+  .....................
+  * `lyrics/`
+    Lyrics generation based on song title and artist.
+    Small model.
+    OK results. Overfitting (as expected due to small dataset)
+
+Decoder-only
+============
+
+  Miguel de Cervantes (Don Quixote)
+  .................................
+  * `cervantes/variants/big/`
+    Note: the model does NOT contain stop-tokens, i.e., generates until `generate` tokens created.
+    Big model.
+    Slow training (too big model), and therefore not much learned.
+  * `cervantes/variants/small/`
+    Note: the model does NOT contain stop-tokens, i.e., generates until `generate` tokens created.
+    Small model.
+    Good results, but predictions continue until forced to stop.
+
+  Finetuning of GPT-2
+  -------------------
+
+    Biblical text generation
+    ........................
+    * `gpt2/bible/`
+      Finetuning of GPT-2 on Bible text.
+      Something is wrong, presumably with the tokenization.
+
+---
 
 The theory is presented in `report.pdf`, along with results and simplified implementation examples.
 
@@ -61,10 +95,10 @@ Relevant papers:
 
 - "Attention is All You Need"
            arXiv:1706.03762v7
+- "Language Models are Unsupervised Multitask Learners"
+                                            OpenAI 2019
 - "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
                                                                   arXiv:1810.04805v2
-- "An image is worth 16x16 words: Transformers for image recognition at scale"
-                                                            arXiv:2010.11929v2
 
 ---
 
