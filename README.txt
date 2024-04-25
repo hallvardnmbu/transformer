@@ -57,7 +57,7 @@ Encoder-decoder (full seq2seq transformer)
     ........................
     * `finetune/t5/lyrics/`
       Finetuning of T5 on song title-lyrics pairs.
-      X
+      Great results.
 
 Decoder-only
 ============
