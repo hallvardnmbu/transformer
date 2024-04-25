@@ -50,6 +50,15 @@ Encoder-decoder (full seq2seq transformer)
     Small model.
     OK results. Overfitting (as expected due to small dataset)
 
+  Finetuning T5
+  -------------
+
+    Song lyric generation
+    ........................
+    * `finetune/t5/lyrics/`
+      Finetuning of T5 on song title-lyrics pairs.
+      X
+
 Decoder-only
 ============
 
@@ -69,8 +78,20 @@ Decoder-only
 
     Biblical text generation
     ........................
-    * `gpt2/`
+    * `finetune/gpt2/bible/`
       Finetuning of GPT-2 on the Bible.
+      Great results.
+
+    Miguel de Cervantes (Don Quixote)
+    .................................
+    * `finetune/gpt2/cervantes/`
+      Finetuning of GPT-2 on Don Quixote.
+      Great results.
+
+    Franz Kafka
+    .................................
+    * `finetune/gpt2/kafka/`
+      Finetuning of GPT-2 on Franz Kafka.
       Great results.
 
 ---

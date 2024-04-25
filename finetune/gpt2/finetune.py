@@ -109,4 +109,4 @@ def finetune(model, batch=8, epochs=5, data="./data/bible_oneline.txt", output="
 
 if __name__ == "__main__":
     gpt2 = get_model("gpt2")
-    finetune(gpt2, batch=8, epochs=5, data="./bible/data/bible_oneline.txt", output="./output/")
+    finetune(gpt2, batch=8, epochs=5, data="../../data/bible/bible_oneline.txt", output="./output/")

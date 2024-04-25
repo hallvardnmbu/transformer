@@ -47,7 +47,7 @@ class Hyperparameters:
     output_path : str, optional
         The path to save the output. Default is './output/'.
     data_path : str, optional
-        The path to the data. Default is './data/quixote/quixote_pairs.txt'.
+        The path to the data. Default is '../data/cervantes/quixote/quixote_pairs.txt'.
     eval_iters : int, optional
         The number of iterations for evaluation. Default is 1.
     checkpoints : bool, optional
