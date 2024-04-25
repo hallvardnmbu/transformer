@@ -63,9 +63,10 @@ def evaluate(model, text, generate=50, **kwargs):
     )
 
 
-def finetune(model, batch=8, epochs=5, data="./data/bible_oneline.txt", output="./output/"):
+def finetune(model, batch=8, epochs=5, data="../../data/bible/bible_qa.txt", output="./output/"):
     """
-    Finetune a model
+    Finetune a model.
+
     Parameters
     ----------
     model : dict
