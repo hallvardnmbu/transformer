@@ -85,7 +85,7 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './data/bible_qa.txt'
+    data_path: str = '../data/bible/bible_qa.txt'
 
     eval_iters = 1
     checkpoints = True

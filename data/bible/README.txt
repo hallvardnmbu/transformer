@@ -1,0 +1,1 @@
+Data from https://www.biblesupersearch.com/bible-downloads/

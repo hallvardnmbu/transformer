@@ -85,7 +85,7 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './data/lyrics.csv'
+    data_path: str = '../data/lyrics/lyrics.csv'
 
     eval_iters = 1
     checkpoints = True

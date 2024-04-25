@@ -92,7 +92,7 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './data/quixote/quixote_pairs.txt'
+    data_path: str = '../data/cervantes/quixote_pairs.txt'
 
     eval_iters = 1
     checkpoints = True

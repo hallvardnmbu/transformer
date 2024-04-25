@@ -85,7 +85,7 @@ class Hyperparameters:
     grad_clip: float = 1.0
 
     output_path: str = './output/'
-    data_path: str = './data/kafka_pairs.txt'
+    data_path: str = '../data/kafka/kafka_pairs.txt'
 
     eval_iters = 2
     checkpoints = True

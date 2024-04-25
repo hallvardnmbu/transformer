@@ -1,1 +1,0 @@
-Data from https://archive.org/details/franz-kafka-the-complete-stories/page/4/mode/2up
