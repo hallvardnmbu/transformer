@@ -9,8 +9,8 @@ Various models were created and trained. The code for these, along with the resu
 in their respective directories. The different models are seen below, marked with "* `<path>`". The
 actual model checkpoints are not included in this repository, but can be provided upon request.
 
-Encoder-decoder (full seq2seq transformer)
-==========================================
+Encoder-decoder (full transformer)
+==================================
 
   Translation
   ...........
