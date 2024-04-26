@@ -89,7 +89,7 @@ Decoder-only
       Great results.
 
     Franz Kafka
-    .................................
+    ...........
     * `finetune/gpt2/kafka/`
       Finetuning of GPT-2 on Franz Kafka.
       Great results.
@@ -99,7 +99,7 @@ Decoder-only
 The theory is presented in `report.pdf`, along with results and simplified implementation examples.
 
 The implementation, examples and results are presented in their corresponding directories. During
-training of the latter four games, Orion HPC (https://orion.nmbu.no) at the Norwegian University of
+training, Orion HPC (https://orion.nmbu.no) at the Norwegian University of
 Life Sciences (NMBU) provided computational resources.
 
 ---
