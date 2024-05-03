@@ -54,7 +54,7 @@ Encoder-decoder (full transformer)
   -------------
 
     Song lyric generation
-    ........................
+    .....................
     * `finetune/t5/lyrics/`
       Finetuning of T5 on song title-lyrics pairs.
       Great results.
